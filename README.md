@@ -8,13 +8,14 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 
 **Working now**
 
-- **First-time setup:** goal type, starting stats, targets, equipment, ability, schedule (days per week and workout length) and your "why"
+- **First-time setup:** goal type and focus areas, starting stats, targets, equipment, ability, schedule (days per week and workout length) and your "why"
 - **Apple Health integration:** latest weight, body fat %, height and birthday read automatically (e.g. from a smart scale)
 - **Goal timeline estimates** at a healthy, sustainable pace
 - **Exercise library:** 64 exercises (compound lifts, arms, shoulders, calves, core and cardio finishers) tagged by movement, muscles, difficulty, equipment, dumbbell weight range and joint cautions
 - **Plans for 2–6 days a week:** full body (2–3 days), upper/lower (4), upper/lower plus full body (5), or push/pull/legs (6)
 - **Workout length (20/30/45/60 min):** sets how many exercises each workout gets; longer workouts add an extra set on the main lifts and, for fat-loss goals, a short cardio finisher
 - **Workout builder:** fills each day from your profile, adapting to your equipment, level and joints; never repeats an exercise within a day and varies them across the week
+- **Focus areas (up to 3):** chosen muscles (arms, chest, shoulders, back, abs, glutes, legs) move up in each workout, get added where they fit, and get an extra set from 30 minutes; a belly-fat focus keeps core work in every session and adds a cardio finisher. Each day's first two main lifts always stay, so the plan stays balanced
 - **Weekly rotation** mapped onto your chosen workout days
 - **Muscle targets:** each day shows which muscle groups it works, and each exercise lists the muscles it trains
 - **Guided workout mode:** start set → rest countdown → Ready, with skip set, skip exercise, pause, ±15s rest and a reps adjuster
@@ -25,6 +26,8 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 - **Progress charts:** weight and body fat history from Apple Health with goal lines, change since start, last-4-weeks change and goal progress; tap and drag to inspect any reading
 - **Where you stand:** weight, body fat, visceral fat and BMI shown on colour-coded range bars (healthy weight for your height, ACE body fat categories, the standard smart scale visceral fat rating), each with your goal marked where there is one
 - **Weigh-in extras:** quick entry for the smart scale numbers Apple Health doesn't store (visceral fat, muscle mass, skeletal muscle %, BMR, metabolic age), with a weigh-in day prompt on the dashboard, a visceral fat chart, and a body composition card showing change since your first entry
+- **Body measurements:** belly, waist, chest, upper arms and more (choose which to track), with a body silhouette that shows exactly where to measure, a reminder every 4 weeks on weigh-in day, and charts with change since your first measurement
+- **Body fat, two ways:** the smart scale reading next to a tape-measure estimate (US Navy method)
 - **Workouts per week** chart against your weekly target
 - **History:** past workouts grouped by week with set-by-set details, missed workouts, make-up and ended-early tags, swipe to delete, and a weigh-in log with changes between readings
 - **Missed workouts and make-ups:** a workout not done on its day is marked missed and can be made up later that week; every week starts fresh at the beginning of the rotation
@@ -34,9 +37,6 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 
 **Coming next**
 
-- Focus areas (pick up to 3): extra volume for chosen muscles (arms, chest, shoulders, back, abs, glutes, legs), or a belly-fat focus that leans toward fat loss and belly tracking
-- Body measurements (belly, waist, chest, upper arms and more) with a body silhouette showing exactly where to measure, a monthly reminder and progress charts
-- Tape-measure body fat estimate (US Navy method) shown alongside the smart scale reading
 - Lock screen Live Activity for rest timers
 - Foundation → Build → Push phases
 - Import from the original FitForge web app
@@ -69,13 +69,15 @@ FitForge/
 │   ├── ProfileOptions.swift     Goal, activity, equipment and other option enums
 │   ├── Exercise.swift           Exercise type, movement patterns, muscle groups, difficulty
 │   ├── ExerciseLibrary.swift    The built-in exercise library
-│   └── WorkoutSession.swift     Saved workouts and their sets
+│   ├── WorkoutSession.swift     Saved workouts and their sets
+│   └── TapeMeasurement.swift    Body measurements and measuring spots
 ├── Services/
 │   ├── HealthKitManager.swift   Apple Health permissions, reads and workout saving
 │   ├── GoalEstimator.swift      Timeline estimates for targets
 │   ├── WorkoutBuilder.swift     Plans for 2–6 days, builds each day, maps the schedule
 │   ├── WorkoutEngine.swift      Runs guided workouts (sets, rest, timers, saving)
 │   ├── WeekSchedule.swift       Weekly plan: done, missed, today, make-ups
+│   ├── TapeBodyFat.swift        Tape-measure body fat estimate (US Navy method)
 │   └── VoiceCoach.swift         Spoken prompts and voice selection
 ├── Theme/
 │   └── Theme.swift              Colours and card styling
@@ -86,6 +88,7 @@ FitForge/
     ├── Workout/                 Workout list, guided mode, timer ring and summary
     ├── Progress/                Charts, range cards, body composition and weigh-in extras entry
     ├── History/                 Past workouts, workout details and weigh-ins
+    ├── Measurements/            Body silhouette, measurement entry and progress
     ├── Profile/                 Profile, section editors and voice picker
     └── Shared/                  Reusable components
 ```

@@ -110,6 +110,54 @@ enum JointCaution: String, CaseIterable, Identifiable, Codable {
     }
 }
 
+/// Areas to prioritize, on top of the main goal (pick up to 3).
+enum FocusArea: String, CaseIterable, Identifiable, Codable {
+    case bellyFat, arms, chest, shoulders, back, abs, glutes, legs
+
+    static let maxSelections = 3
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .bellyFat: "Belly fat"
+        case .arms: "Arms"
+        case .chest: "Chest"
+        case .shoulders: "Shoulders"
+        case .back: "Back"
+        case .abs: "Abs"
+        case .glutes: "Glutes"
+        case .legs: "Legs"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .bellyFat: "flame.fill"
+        case .arms: "dumbbell.fill"
+        case .chest: "figure.strengthtraining.functional"
+        case .shoulders: "figure.arms.open"
+        case .back: "figure.rower"
+        case .abs: "figure.core.training"
+        case .glutes: "figure.strengthtraining.traditional"
+        case .legs: "figure.step.training"
+        }
+    }
+
+    /// The movement patterns that get extra priority and volume.
+    var patterns: [MovementPattern] {
+        switch self {
+        case .bellyFat, .abs: [.core]
+        case .arms: [.biceps, .triceps]
+        case .chest: [.push]
+        case .shoulders: [.shoulders]
+        case .back: [.pull]
+        case .glutes: [.hinge]
+        case .legs: [.squat, .lunge]
+        }
+    }
+}
+
 /// Which set of body fat ranges to show (they differ for men and women).
 enum BodyFatRanges: String, CaseIterable, Identifiable, Codable {
     case male

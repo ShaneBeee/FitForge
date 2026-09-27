@@ -31,14 +31,16 @@ struct ProgressScreen: View {
     @Environment(HealthKitManager.self) private var health
     @Query(sort: \WorkoutSession.startDate) private var sessions: [WorkoutSession]
     @Query(sort: \BodyMeasurement.date) private var measurements: [BodyMeasurement]
+    @Query(sort: \TapeMeasurement.date) private var tapeEntries: [TapeMeasurement]
 
     @State private var range: ProgressRange = .threeMonths
     @State private var weights: [HealthKitManager.Reading] = []
     @State private var bodyFats: [HealthKitManager.Reading] = []
     @State private var hasLoaded = false
     @State private var showExtrasEntry = false
+    @State private var showMeasurementsEntry = false
 
-    /// Weigh-ins that have Renpho extras, oldest first.
+    /// Weigh-ins that have smart scale extras, oldest first.
     private var extras: [BodyMeasurement] {
         measurements.filter(\.hasExtras)
     }
@@ -116,6 +118,22 @@ struct ProgressScreen: View {
 
                     whereYouStand
 
+                    TapeBodyFatCard(
+                        profile: profile,
+                        entries: tapeEntries,
+                        scaleBodyFat: bodyFats.last?.value ?? health.latestBodyFat?.value
+                    ) {
+                        showMeasurementsEntry = true
+                    }
+
+                    MeasurementsSection(
+                        profile: profile,
+                        entries: tapeEntries,
+                        domainStart: domainStart
+                    ) {
+                        showMeasurementsEntry = true
+                    }
+
                     BodyCompositionCard(measurements: extras, age: age) {
                         showExtrasEntry = true
                     }
@@ -133,15 +151,27 @@ struct ProgressScreen: View {
             .navigationTitle("Progress")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showExtrasEntry = true
+                    Menu {
+                        Button {
+                            showMeasurementsEntry = true
+                        } label: {
+                            Label("Log measurements", systemImage: "ruler")
+                        }
+                        Button {
+                            showExtrasEntry = true
+                        } label: {
+                            Label("Log scale extras", systemImage: "scalemass")
+                        }
                     } label: {
-                        Label("Log weigh-in extras", systemImage: "plus")
+                        Label("Log", systemImage: "plus")
                     }
                 }
             }
             .sheet(isPresented: $showExtrasEntry) {
                 WeighInExtrasSheet()
+            }
+            .sheet(isPresented: $showMeasurementsEntry) {
+                MeasurementsSheet(profile: profile)
             }
             .refreshable { await load() }
             .task(id: range) { await load() }

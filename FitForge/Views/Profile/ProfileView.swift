@@ -32,6 +32,7 @@ struct ProfileView: View {
 
                 Section {
                     LabeledContent("Main goal", value: profile.goalType.title)
+                    LabeledContent("Focus areas", value: profile.focusAreas.isEmpty ? "None" : profile.focusAreas.map(\.title).joined(separator: ", "))
                     LabeledContent("Target weight", value: format(profile.targetWeightLbs, unit: "lb"))
                     LabeledContent("Target body fat", value: format(profile.targetBodyFatPercent, unit: "%"))
                 } header: {

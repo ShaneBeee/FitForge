@@ -15,7 +15,8 @@ struct FitForgeApp: App {
             EquipmentItem.self,
             BodyMeasurement.self,
             WorkoutSession.self,
-            SetLog.self
+            SetLog.self,
+            TapeMeasurement.self
         ])
     }
 }

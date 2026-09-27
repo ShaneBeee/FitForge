@@ -22,6 +22,7 @@ final class OnboardingDraft {
 
     // Goal
     private(set) var goalType: GoalType = .both
+    private(set) var focusAreas: Set<FocusArea> = []
 
     // Starting point
     var currentWeightLbs: Double?
@@ -68,6 +69,7 @@ final class OnboardingDraft {
         why = profile.why
 
         goalType = profile.goalType
+        focusAreas = Set(profile.focusAreas)
         targetWeightLbs = profile.targetWeightLbs
         targetBodyFatPercent = profile.targetBodyFatPercent
 
@@ -127,6 +129,15 @@ final class OnboardingDraft {
     func setGoal(_ goal: GoalType) {
         goalType = goal
         if !restWasCustomized { restSeconds = goal.defaultRestSeconds }
+    }
+
+    /// Adds or removes a focus area (up to 3).
+    func toggleFocus(_ area: FocusArea) {
+        if focusAreas.contains(area) {
+            focusAreas.remove(area)
+        } else if focusAreas.count < FocusArea.maxSelections {
+            focusAreas.insert(area)
+        }
     }
 
     func setRest(_ seconds: Int) {
@@ -200,6 +211,7 @@ final class OnboardingDraft {
 
         case .goal:
             profile.goalType = goalType
+            profile.focusAreas = FocusArea.allCases.filter { focusAreas.contains($0) }
             profile.targetWeightLbs = targetWeightLbs
             profile.targetBodyFatPercent = targetBodyFatPercent
 
@@ -245,6 +257,7 @@ final class OnboardingDraft {
         profile.heightInches = Double(heightTotalInches)
 
         profile.goalType = goalType
+        profile.focusAreas = FocusArea.allCases.filter { focusAreas.contains($0) }
         profile.targetWeightLbs = targetWeightLbs
         profile.targetBodyFatPercent = targetBodyFatPercent
         profile.why = why.trimmingCharacters(in: .whitespacesAndNewlines)

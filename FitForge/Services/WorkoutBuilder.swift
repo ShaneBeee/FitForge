@@ -14,6 +14,18 @@ enum DayKind {
         case .legs: "A leg day: quads, glutes, hamstrings and calves."
         }
     }
+
+    /// Whether a movement fits this kind of day (so an arm focus doesn't add curls to leg day).
+    func allows(_ pattern: MovementPattern) -> Bool {
+        switch self {
+        case .fullBody: true
+        case .upper: [.push, .pull, .shoulders, .biceps, .triceps, .core].contains(pattern)
+        case .lower: [.squat, .lunge, .hinge, .calves, .core, .carry].contains(pattern)
+        case .push: [.push, .shoulders, .triceps, .core].contains(pattern)
+        case .pull: [.pull, .biceps, .core, .carry].contains(pattern)
+        case .legs: [.squat, .lunge, .hinge, .calves, .core].contains(pattern)
+        }
+    }
 }
 
 /// One workout in the weekly rotation (e.g. "Day A", "Upper B", "Push A").
@@ -151,6 +163,8 @@ struct PlannedExercise: Identifiable, Hashable {
     /// Hold/carry time for timed exercises.
     let seconds: Int?
     let restSeconds: Int
+    /// True when this exercise is here because of one of the user's focus areas.
+    var isFocus = false
 
     var id: String { exercise.id }
 
@@ -217,25 +231,69 @@ enum WorkoutBuilder {
     /// Builds every day at once, so exercises vary across the week and never repeat within a day.
     static func buildWeek(for profile: UserProfile) -> [PlannedWorkout] {
         var weekUsed: Set<String> = []
-        let minutes = profile.workoutMinutes
-        let addFinisher = minutes >= 45 && profile.goalType != .buildMuscle
 
-        return WorkoutPlans.days(for: profile).map { day in
+        return WorkoutPlans.days(for: profile).enumerated().map { dayIndex, day in
             var dayUsed: Set<String> = []
-            var slots = Array(day.slots.prefix(slotCount(forMinutes: minutes)))
-            if addFinisher { slots.append(.conditioning) }
+            let plan = slots(for: day, dayIndex: dayIndex, profile: profile)
 
             var exercises: [PlannedExercise] = []
-            for (index, pattern) in slots.enumerated() {
+            for (index, pattern) in plan.slots.enumerated() {
                 let exercise = pick(pattern, for: profile, avoiding: weekUsed, excluding: dayUsed)
                     ?? fallback(for: pattern).flatMap { pick($0, for: profile, avoiding: weekUsed, excluding: dayUsed) }
                 guard let exercise else { continue }
                 dayUsed.insert(exercise.id)
                 weekUsed.insert(exercise.id)
-                exercises.append(prescribe(exercise, for: profile, isMainLift: index < 2))
+                exercises.append(prescribe(
+                    exercise,
+                    for: profile,
+                    isMainLift: index < 2,
+                    isFocus: plan.focus.contains(exercise.pattern)
+                ))
             }
             return PlannedWorkout(day: day, exercises: exercises)
         }
+    }
+
+    /// The movement slots for one day, with the user's focus areas moved up (or added),
+    /// trimmed to fit the workout length. The day's first two main lifts always stay,
+    /// so the plan keeps its balance.
+    static func slots(for day: WorkoutDay, dayIndex: Int, profile: UserProfile) -> (slots: [MovementPattern], focus: Set<MovementPattern>) {
+        let minutes = profile.workoutMinutes
+        let focusAreas = profile.focusAreas
+
+        // Focus patterns for this day. Areas with two patterns (arms: biceps + triceps)
+        // alternate day to day in shorter workouts, and both appear in longer ones.
+        var focusPatterns: [MovementPattern] = []
+        for area in focusAreas {
+            let allowed = area.patterns.filter { day.kind.allows($0) }
+            guard !allowed.isEmpty else { continue }
+            let chosen = minutes >= 45 ? allowed : [allowed[dayIndex % allowed.count]]
+            for pattern in chosen where !focusPatterns.contains(pattern) {
+                focusPatterns.append(pattern)
+            }
+        }
+
+        let fixed = Array(day.slots.prefix(2))
+        var rest = Array(day.slots.dropFirst(2))
+        var prioritized: [MovementPattern] = []
+        for pattern in focusPatterns {
+            if let index = rest.firstIndex(of: pattern) {
+                prioritized.append(rest.remove(at: index))
+            } else if !fixed.contains(pattern) {
+                prioritized.append(pattern)
+            } else if minutes >= 30 {
+                // Already a main lift today — add a second exercise for it in longer workouts.
+                prioritized.append(pattern)
+            }
+        }
+
+        var slots = Array((fixed + prioritized + rest).prefix(slotCount(forMinutes: minutes)))
+
+        let wantsFinisher = (minutes >= 45 && profile.goalType != .buildMuscle)
+            || (minutes >= 30 && focusAreas.contains(.bellyFat))
+        if wantsFinisher { slots.append(.conditioning) }
+
+        return (slots, Set(focusPatterns))
     }
 
     static func build(_ day: WorkoutDay, for profile: UserProfile) -> PlannedWorkout {
@@ -333,10 +391,13 @@ enum WorkoutBuilder {
 
     // MARK: - Sets and reps
 
-    static func prescribe(_ exercise: Exercise, for profile: UserProfile, isMainLift: Bool = false) -> PlannedExercise {
+    static func prescribe(_ exercise: Exercise, for profile: UserProfile, isMainLift: Bool = false, isFocus: Bool = false) -> PlannedExercise {
         let goal = profile.goalType
-        // Longer workouts give the first two (main) lifts an extra set.
-        let sets = (profile.workoutMinutes >= 45 && isMainLift && exercise.measure == .reps) ? 4 : 3
+        let minutes = profile.workoutMinutes
+        // Extra set for the main lifts in longer workouts, and for focus areas from 30 minutes up.
+        let extraSet = exercise.measure == .reps
+            && ((minutes >= 45 && isMainLift) || (minutes >= 30 && isFocus))
+        let sets = extraSet ? 4 : 3
 
         switch exercise.measure {
         case .time:
@@ -351,7 +412,7 @@ enum WorkoutBuilder {
                 case .advanced: 45
                 }
             }
-            return PlannedExercise(exercise: exercise, sets: sets, reps: nil, seconds: seconds, restSeconds: profile.restSeconds)
+            return PlannedExercise(exercise: exercise, sets: sets, reps: nil, seconds: seconds, restSeconds: profile.restSeconds, isFocus: isFocus)
 
         case .reps:
             let reps: ClosedRange<Int> = switch exercise.pattern {
@@ -362,7 +423,7 @@ enum WorkoutBuilder {
             default:
                 goal == .loseFat ? 12...15 : 8...12
             }
-            return PlannedExercise(exercise: exercise, sets: sets, reps: reps, seconds: nil, restSeconds: profile.restSeconds)
+            return PlannedExercise(exercise: exercise, sets: sets, reps: reps, seconds: nil, restSeconds: profile.restSeconds, isFocus: isFocus)
         }
     }
 }

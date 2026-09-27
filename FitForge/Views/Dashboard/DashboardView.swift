@@ -6,15 +6,26 @@ struct DashboardView: View {
     @Environment(\.modelContext) private var context
     @Query private var sessions: [WorkoutSession]
     @Query(sort: \BodyMeasurement.date, order: .reverse) private var measurements: [BodyMeasurement]
+    @Query(sort: \TapeMeasurement.date, order: .reverse) private var tapeEntries: [TapeMeasurement]
     @State private var activeWorkout: WorkoutEngine?
     @State private var showExtrasEntry = false
+    @State private var showMeasurementsEntry = false
     let profile: UserProfile
+
+    private var isWeighInDay: Bool {
+        Calendar.current.component(.weekday, from: .now) == profile.weighInWeekday
+    }
 
     /// Weigh-in day, and today's scale extras haven't been logged yet.
     private var shouldPromptForExtras: Bool {
-        let today = Calendar.current.component(.weekday, from: .now)
-        guard today == profile.weighInWeekday else { return false }
-        return !measurements.contains { Calendar.current.isDateInToday($0.date) && $0.hasExtras }
+        isWeighInDay && !measurements.contains { Calendar.current.isDateInToday($0.date) && $0.hasExtras }
+    }
+
+    /// Weigh-in day, and it's been 4+ weeks since the last tape measurements (or there are none).
+    private var shouldPromptForMeasurements: Bool {
+        guard isWeighInDay else { return false }
+        guard let last = tapeEntries.first?.date else { return true }
+        return (Calendar.current.dateComponents([.day], from: last, to: .now).day ?? 0) >= 28
     }
 
     var body: some View {
@@ -36,6 +47,10 @@ struct DashboardView: View {
 
                     if shouldPromptForExtras {
                         weighInPrompt
+                    }
+
+                    if shouldPromptForMeasurements {
+                        measurePrompt
                     }
 
                     if !profile.why.isEmpty {
@@ -72,7 +87,32 @@ struct DashboardView: View {
             .sheet(isPresented: $showExtrasEntry) {
                 WeighInExtrasSheet()
             }
+            .sheet(isPresented: $showMeasurementsEntry) {
+                MeasurementsSheet(profile: profile)
+            }
         }
+    }
+
+    private var measurePrompt: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "ruler.fill")
+                .font(.title)
+                .foregroundStyle(Theme.gradient)
+                .frame(width: 44)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(tapeEntries.isEmpty ? "Take your first measurements" : "Time to measure")
+                    .font(.headline)
+                Text("Belly, waist, chest and arms. It takes about two minutes and shows progress the scale can miss.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+            Button("Measure") { showMeasurementsEntry = true }
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .tint(Theme.teal)
+        }
+        .cardStyle()
     }
 
     private var weighInPrompt: some View {

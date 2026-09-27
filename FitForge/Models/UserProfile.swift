@@ -18,6 +18,8 @@ final class UserProfile {
     var targetWeightLbs: Double? = nil
     var targetBodyFatPercent: Double? = nil
     var why: String = ""
+    /// Up to 3 FocusArea raw values.
+    var focusAreasRaw: [String] = []
 
     // Starting point (baseline for progress)
     var startDate: Date = Date.now
@@ -40,6 +42,9 @@ final class UserProfile {
     var restSeconds: Int = 60
     /// Target workout length in minutes (20, 30, 45 or 60).
     var workoutMinutes: Int = 20
+
+    /// Which tape measurements to track (MeasureSite raw values). Empty means the defaults.
+    var trackedSitesRaw: [String] = []
 
     var hasCompletedSetup: Bool = false
 
@@ -73,6 +78,21 @@ final class UserProfile {
     var bodyFatRanges: BodyFatRanges? {
         get { BodyFatRanges(rawValue: bodyFatRangesRaw) }
         set { bodyFatRangesRaw = newValue?.rawValue ?? "" }
+    }
+
+    /// Focus areas in a consistent order.
+    var focusAreas: [FocusArea] {
+        get { FocusArea.allCases.filter { focusAreasRaw.contains($0.rawValue) } }
+        set { focusAreasRaw = newValue.map(\.rawValue) }
+    }
+
+    /// Tracked measurement sites in a consistent order (the defaults if none are chosen).
+    var trackedSites: [MeasureSite] {
+        get {
+            let sites = MeasureSite.allCases.filter { trackedSitesRaw.contains($0.rawValue) }
+            return sites.isEmpty ? MeasureSite.defaultTracked : sites
+        }
+        set { trackedSitesRaw = newValue.map(\.rawValue) }
     }
 
     func tier(for question: AbilityQuestion) -> Int {

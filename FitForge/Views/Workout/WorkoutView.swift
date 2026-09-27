@@ -189,8 +189,18 @@ struct ExerciseRow: View {
                 .background(Theme.gradient, in: Circle())
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(planned.exercise.name)
-                    .font(.headline)
+                HStack(spacing: 6) {
+                    Text(planned.exercise.name)
+                        .font(.headline)
+                    if planned.isFocus {
+                        Label("Focus", systemImage: "scope")
+                            .font(.caption2.weight(.bold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .foregroundStyle(Theme.green)
+                            .background(Theme.green.opacity(0.15), in: Capsule())
+                    }
+                }
                 Text(planned.prescription)
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(.secondary)
