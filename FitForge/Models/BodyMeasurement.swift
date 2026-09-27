@@ -1,8 +1,8 @@
 import Foundation
 import SwiftData
 
-/// One weigh-in. Weight and body fat normally come from Apple Health (Renpho);
-/// the Renpho-only extras are optional manual entries.
+/// One weigh-in. Weight and body fat normally come from Apple Health (e.g. a smart scale);
+/// the extras that Health has no place for are optional manual entries.
 @Model
 final class BodyMeasurement {
     var date: Date = Date.now
@@ -11,7 +11,7 @@ final class BodyMeasurement {
     var weightLbs: Double? = nil
     var bodyFatPercent: Double? = nil
 
-    // Renpho extras with no place in Apple Health — optional manual entry
+    // Smart scale extras with no place in Apple Health — optional manual entry
     var visceralFat: Double? = nil
     var muscleMassLbs: Double? = nil
     var skeletalMusclePercent: Double? = nil

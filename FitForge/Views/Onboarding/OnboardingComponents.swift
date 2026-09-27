@@ -122,7 +122,8 @@ struct NumberEntryRow: View {
                 .frame(maxWidth: 100)
             Text(unit)
                 .foregroundStyle(.secondary)
-                .frame(width: 24, alignment: .leading)
+                .frame(minWidth: 24, alignment: .leading)
+                .fixedSize()
         }
         .padding(.vertical, 4)
     }

@@ -1,8 +1,10 @@
 import SwiftUI
+import SwiftData
 
 /// Weigh-ins from Apple Health, newest first, with the change since the one before.
 struct WeighInHistoryView: View {
     @Environment(HealthKitManager.self) private var health
+    @Query private var measurements: [BodyMeasurement]
 
     private struct WeighIn: Identifiable {
         let date: Date
@@ -63,9 +65,18 @@ struct WeighInHistoryView: View {
                             .foregroundStyle(Theme.green)
                     }
                 }
+                if let visceral = visceralFat(on: weighIn.date) {
+                    Text("Visceral \(visceral.formatted(.number.precision(.fractionLength(0))))")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.teal)
+                }
             }
             .monospacedDigit()
         }
+    }
+
+    private func visceralFat(on date: Date) -> Double? {
+        measurements.first { Calendar.current.isDate($0.date, inSameDayAs: date) && $0.visceralFat != nil }?.visceralFat
     }
 
     private func change(_ current: Double?, _ previous: Double?) -> String? {

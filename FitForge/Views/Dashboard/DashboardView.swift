@@ -5,8 +5,17 @@ struct DashboardView: View {
     @Environment(HealthKitManager.self) private var health
     @Environment(\.modelContext) private var context
     @Query private var sessions: [WorkoutSession]
+    @Query(sort: \BodyMeasurement.date, order: .reverse) private var measurements: [BodyMeasurement]
     @State private var activeWorkout: WorkoutEngine?
+    @State private var showExtrasEntry = false
     let profile: UserProfile
+
+    /// Weigh-in day, and today's scale extras haven't been logged yet.
+    private var shouldPromptForExtras: Bool {
+        let today = Calendar.current.component(.weekday, from: .now)
+        guard today == profile.weighInWeekday else { return false }
+        return !measurements.contains { Calendar.current.isDateInToday($0.date) && $0.hasExtras }
+    }
 
     var body: some View {
         NavigationStack {
@@ -23,6 +32,10 @@ struct DashboardView: View {
                             context: context,
                             health: health
                         )
+                    }
+
+                    if shouldPromptForExtras {
+                        weighInPrompt
                     }
 
                     if !profile.why.isEmpty {
@@ -56,7 +69,32 @@ struct DashboardView: View {
             .fullScreenCover(item: $activeWorkout) { engine in
                 GuidedWorkoutView(engine: engine)
             }
+            .sheet(isPresented: $showExtrasEntry) {
+                WeighInExtrasSheet()
+            }
         }
+    }
+
+    private var weighInPrompt: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "scalemass.fill")
+                .font(.title)
+                .foregroundStyle(Theme.gradient)
+                .frame(width: 44)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Weigh-in day")
+                    .font(.headline)
+                Text("Add your scale's extra numbers: visceral fat, muscle mass and more.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+            Button("Add") { showExtrasEntry = true }
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .tint(Theme.blue)
+        }
+        .cardStyle()
     }
 
     // MARK: - Sections
@@ -112,7 +150,7 @@ struct DashboardView: View {
             }
 
             if health.latestWeight == nil && health.latestBodyFat == nil && !health.isLoading {
-                Text("No weigh-ins found. Make sure Renpho is syncing to Apple Health, and that FitForge is allowed to read Weight and Body Fat Percentage in Settings → Health → Data Access & Devices.")
+                Text("No weigh-ins found. Make sure your smart scale's app is syncing to Apple Health, and that FitForge is allowed to read Weight and Body Fat Percentage in Settings → Health → Data Access & Devices.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -128,7 +166,7 @@ struct DashboardView: View {
             Text("Connect Apple Health")
                 .font(.title3.weight(.bold))
 
-            Text("FitForge reads your weigh-ins from Apple Health (including your Renpho scale), so you never have to type them in. Workouts you finish get saved back to Health.")
+            Text("FitForge reads your weigh-ins from Apple Health (including from a smart scale), so you never have to type them in. Workouts you finish get saved back to Health.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 

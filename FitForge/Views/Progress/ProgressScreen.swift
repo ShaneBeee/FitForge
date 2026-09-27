@@ -23,17 +23,38 @@ enum ProgressRange: String, CaseIterable, Identifiable {
     }
 }
 
-/// The Progress tab: weight and body fat charts, BMI, and workouts per week.
+/// The Progress tab: weight, body fat and visceral fat charts, where you stand,
+/// body composition, and workouts per week.
 struct ProgressScreen: View {
     let profile: UserProfile
 
     @Environment(HealthKitManager.self) private var health
     @Query(sort: \WorkoutSession.startDate) private var sessions: [WorkoutSession]
+    @Query(sort: \BodyMeasurement.date) private var measurements: [BodyMeasurement]
 
     @State private var range: ProgressRange = .threeMonths
     @State private var weights: [HealthKitManager.Reading] = []
     @State private var bodyFats: [HealthKitManager.Reading] = []
     @State private var hasLoaded = false
+    @State private var showExtrasEntry = false
+
+    /// Weigh-ins that have Renpho extras, oldest first.
+    private var extras: [BodyMeasurement] {
+        measurements.filter(\.hasExtras)
+    }
+
+    /// Visceral fat readings within the chosen range.
+    private var visceralReadings: [HealthKitManager.Reading] {
+        measurements
+            .filter { $0.date >= range.startDate }
+            .compactMap { measurement in
+                measurement.visceralFat.map { HealthKitManager.Reading(value: $0, date: measurement.date) }
+            }
+    }
+
+    private var age: Int? {
+        profile.birthDate.flatMap { Calendar.current.dateComponents([.year], from: $0, to: .now).year }
+    }
 
     /// For "All", start the charts at the first reading instead of 10 years ago.
     private var domainStart: Date {
@@ -79,7 +100,25 @@ struct ProgressScreen: View {
                         domainStart: domainStart
                     )
 
+                    if extras.contains(where: { $0.visceralFat != nil }) {
+                        MetricChartCard(
+                            title: "Visceral fat",
+                            systemImage: "target",
+                            unit: "",
+                            readings: visceralReadings,
+                            start: extras.first(where: { $0.visceralFat != nil })?.visceralFat,
+                            goal: nil,
+                            tint: Theme.teal,
+                            domainStart: domainStart,
+                            fractionDigits: 0
+                        )
+                    }
+
                     whereYouStand
+
+                    BodyCompositionCard(measurements: extras, age: age) {
+                        showExtrasEntry = true
+                    }
 
                     WorkoutsPerWeekCard(
                         sessions: sessions,
@@ -92,6 +131,18 @@ struct ProgressScreen: View {
                 .opacity(hasLoaded ? 1 : 0.5)
             }
             .navigationTitle("Progress")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showExtrasEntry = true
+                    } label: {
+                        Label("Log weigh-in extras", systemImage: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showExtrasEntry) {
+                WeighInExtrasSheet()
+            }
             .refreshable { await load() }
             .task(id: range) { await load() }
         }
@@ -116,6 +167,10 @@ struct ProgressScreen: View {
 
         if let bodyFat {
             BodyFatRangeCard(profile: profile, bodyFatPercent: bodyFat, goalPercent: profile.targetBodyFatPercent)
+        }
+
+        if let visceral = extras.last(where: { $0.visceralFat != nil })?.visceralFat {
+            VisceralFatRangeCard(rating: visceral)
         }
 
         if let weight, height > 0 {

@@ -11,6 +11,8 @@ struct MetricChartCard: View {
     let goal: Double?
     let tint: Color
     let domainStart: Date
+    /// Decimal places shown for values (e.g. 0 for a visceral fat rating).
+    var fractionDigits = 1
 
     @State private var selectedDate: Date?
 
@@ -53,7 +55,7 @@ struct MetricChartCard: View {
             Spacer()
             if let latest {
                 VStack(alignment: .trailing, spacing: 0) {
-                    Text("\(Self.format(latest.value)) \(unit)")
+                    Text("\(format(latest.value)) \(unit)")
                         .font(.title2.weight(.bold).monospacedDigit())
                     Text(latest.date, format: .relative(presentation: .named))
                         .font(.caption)
@@ -72,7 +74,7 @@ struct MetricChartCard: View {
                     .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
                     .foregroundStyle(Theme.green)
                     .annotation(position: .top, alignment: .leading) {
-                        Text("Goal \(Self.format(goal)) \(unit)")
+                        Text("Goal \(format(goal)) \(unit)")
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(Theme.green)
                     }
@@ -99,7 +101,7 @@ struct MetricChartCard: View {
                     .foregroundStyle(Color.secondary.opacity(0.4))
                     .annotation(position: .top, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
                         VStack(spacing: 2) {
-                            Text("\(Self.format(selected.value)) \(unit)")
+                            Text("\(format(selected.value)) \(unit)")
                                 .font(.caption.weight(.bold).monospacedDigit())
                             Text(selected.date, format: .dateTime.month(.abbreviated).day())
                                 .font(.caption2)
@@ -151,7 +153,7 @@ struct MetricChartCard: View {
             Text(label)
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
-            Text("\(sign)\(Self.format(abs(change))) \(unit)")
+            Text("\(sign)\(format(abs(change))) \(unit)")
                 .font(.subheadline.weight(.bold).monospacedDigit())
                 .foregroundStyle(towardGoal ? Theme.green : .primary)
         }
@@ -175,7 +177,7 @@ struct MetricChartCard: View {
                 HStack {
                     Text("\(Int((fraction * 100).rounded()))% of the way to your goal")
                     Spacer()
-                    Text(fraction >= 1 ? "Goal reached!" : "\(Self.format(remaining)) \(unit) to go")
+                    Text(fraction >= 1 ? "Goal reached!" : "\(format(remaining)) \(unit) to go")
                 }
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -183,7 +185,7 @@ struct MetricChartCard: View {
         }
     }
 
-    static func format(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(1)))
+    private func format(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(fractionDigits)))
     }
 }
