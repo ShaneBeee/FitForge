@@ -44,6 +44,8 @@ struct ExerciseDetailView: View {
                     }
 
                     FormCard {
+                        LabeledContent("Works", value: exercise.muscles.map(\.title).joined(separator: ", "))
+                        Divider()
                         LabeledContent("Movement", value: exercise.pattern.title)
                         Divider()
                         LabeledContent("Level", value: exercise.difficulty.title)

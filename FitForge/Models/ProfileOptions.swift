@@ -110,6 +110,21 @@ enum JointCaution: String, CaseIterable, Identifiable, Codable {
     }
 }
 
+/// Which set of body fat ranges to show (they differ for men and women).
+enum BodyFatRanges: String, CaseIterable, Identifiable, Codable {
+    case male
+    case female
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .male: "Male"
+        case .female: "Female"
+        }
+    }
+}
+
 /// The ability questions asked during setup. Each answer is stored as a tier (0–3).
 enum AbilityQuestion: String, CaseIterable, Identifiable, Codable {
     case pushUps

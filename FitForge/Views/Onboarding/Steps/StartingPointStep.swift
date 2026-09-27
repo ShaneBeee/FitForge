@@ -30,6 +30,18 @@ struct StartingPointStep: View {
                 }
             }
 
+            SectionLabel("Body fat ranges")
+            Text("Healthy body fat ranges differ for men and women. This is only used to show where you stand.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                ForEach(BodyFatRanges.allCases) { option in
+                    ChipButton(title: option.title, isSelected: draft.bodyFatRanges == option) {
+                        draft.bodyFatRanges = option
+                    }
+                }
+            }
+
             SectionLabel("How active is your day?")
             ForEach(ActivityLevel.allCases) { level in
                 OptionCard(

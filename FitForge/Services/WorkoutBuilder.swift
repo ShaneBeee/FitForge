@@ -1,23 +1,144 @@
 import Foundation
 
-/// The three rotating workouts.
-enum WorkoutDay: String, CaseIterable, Identifiable, Codable {
-    case a = "A", b = "B", c = "C"
+/// What a workout day focuses on.
+enum DayKind {
+    case fullBody, upper, lower, push, pull, legs
 
-    var id: String { rawValue }
-    var title: String { "Day \(rawValue)" }
-
-    /// The movement slots that make up this day, in order.
-    var slots: [MovementPattern] {
+    var description: String {
         switch self {
-        case .a: [.squat, .push, .hinge, .core]
-        case .b: [.lunge, .pull, .push, .core]
-        case .c: [.hinge, .pull, .lunge, .carry]
+        case .fullBody: "A full-body day: upper body, core and lower body every session."
+        case .upper: "An upper-body day: chest, back, shoulders and arms."
+        case .lower: "A lower-body day: legs, glutes and core."
+        case .push: "A push day: chest, shoulders and triceps."
+        case .pull: "A pull day: back, biceps and grip."
+        case .legs: "A leg day: quads, glutes, hamstrings and calves."
+        }
+    }
+}
+
+/// One workout in the weekly rotation (e.g. "Day A", "Upper B", "Push A").
+struct WorkoutDay: Identifiable, Hashable {
+    /// Stable ID saved with each workout. The 3-day plan keeps "A", "B" and "C".
+    let id: String
+    let title: String
+    /// Short label for round badges, e.g. "A" or "UA".
+    let badge: String
+    let kind: DayKind
+    /// Movement slots in priority order. Shorter workouts use the first few.
+    let slots: [MovementPattern]
+
+    static func == (lhs: WorkoutDay, rhs: WorkoutDay) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
+
+    /// Body areas of the day's main movements, e.g. "Legs · Chest · Glutes · Core".
+    var focus: String {
+        var areas: [String] = []
+        for pattern in slots.prefix(4) where !areas.contains(pattern.areaTitle) {
+            areas.append(pattern.areaTitle)
+        }
+        return areas.joined(separator: " · ")
+    }
+}
+
+/// The workout rotations for each number of days per week.
+enum WorkoutPlans {
+
+    // 3 days: full body A/B/C (IDs kept as "A", "B", "C" so older workouts still match)
+    static let fullBody3: [WorkoutDay] = [
+        WorkoutDay(id: "A", title: "Day A", badge: "A", kind: .fullBody,
+                   slots: [.squat, .push, .hinge, .core, .pull, .shoulders, .triceps, .calves]),
+        WorkoutDay(id: "B", title: "Day B", badge: "B", kind: .fullBody,
+                   slots: [.lunge, .pull, .push, .core, .hinge, .biceps, .shoulders, .calves]),
+        WorkoutDay(id: "C", title: "Day C", badge: "C", kind: .fullBody,
+                   slots: [.hinge, .pull, .lunge, .carry, .push, .core, .triceps, .biceps]),
+    ]
+
+    // 2 days: full body A/B, each covering everything
+    static let fullBody2: [WorkoutDay] = [
+        WorkoutDay(id: "2A", title: "Day A", badge: "A", kind: .fullBody,
+                   slots: [.squat, .push, .pull, .core, .hinge, .shoulders, .biceps, .calves]),
+        WorkoutDay(id: "2B", title: "Day B", badge: "B", kind: .fullBody,
+                   slots: [.hinge, .pull, .push, .lunge, .core, .triceps, .shoulders, .carry]),
+    ]
+
+    // 4 days: upper / lower, twice each
+    static let upperA = WorkoutDay(id: "UA", title: "Upper A", badge: "UA", kind: .upper,
+                                   slots: [.push, .pull, .push, .pull, .shoulders, .triceps, .biceps, .core])
+    static let lowerA = WorkoutDay(id: "LA", title: "Lower A", badge: "LA", kind: .lower,
+                                   slots: [.squat, .hinge, .lunge, .core, .calves, .carry, .core, .hinge])
+    static let upperB = WorkoutDay(id: "UB", title: "Upper B", badge: "UB", kind: .upper,
+                                   slots: [.pull, .push, .pull, .push, .shoulders, .biceps, .triceps, .core])
+    static let lowerB = WorkoutDay(id: "LB", title: "Lower B", badge: "LB", kind: .lower,
+                                   slots: [.hinge, .lunge, .squat, .core, .calves, .core, .carry, .lunge])
+
+    static let upperLower: [WorkoutDay] = [upperA, lowerA, upperB, lowerB]
+
+    // 5 days: upper / lower twice, plus a full-body day
+    static let fullBodyExtra = WorkoutDay(id: "FB", title: "Full body", badge: "FB", kind: .fullBody,
+                                          slots: [.squat, .pull, .push, .hinge, .core, .carry, .shoulders, .calves])
+
+    // 6 days: push / pull / legs, twice each
+    static let pushPullLegs: [WorkoutDay] = [
+        WorkoutDay(id: "PsA", title: "Push A", badge: "Ps", kind: .push,
+                   slots: [.push, .push, .shoulders, .triceps, .push, .shoulders, .triceps, .core]),
+        WorkoutDay(id: "PlA", title: "Pull A", badge: "Pl", kind: .pull,
+                   slots: [.pull, .pull, .biceps, .pull, .carry, .biceps, .core, .pull]),
+        WorkoutDay(id: "LgA", title: "Legs A", badge: "Lg", kind: .legs,
+                   slots: [.squat, .hinge, .lunge, .calves, .core, .lunge, .hinge, .calves]),
+        WorkoutDay(id: "PsB", title: "Push B", badge: "Ps", kind: .push,
+                   slots: [.push, .shoulders, .push, .triceps, .shoulders, .push, .core, .triceps]),
+        WorkoutDay(id: "PlB", title: "Pull B", badge: "Pl", kind: .pull,
+                   slots: [.pull, .biceps, .pull, .pull, .core, .biceps, .carry, .pull]),
+        WorkoutDay(id: "LgB", title: "Legs B", badge: "Lg", kind: .legs,
+                   slots: [.hinge, .lunge, .squat, .calves, .core, .squat, .lunge, .calves]),
+    ]
+
+    static let allDays: [WorkoutDay] = fullBody3 + fullBody2 + upperLower + [fullBodyExtra] + pushPullLegs
+
+    static let daysPerWeekOptions = 2...6
+    static let lengthOptions = [20, 30, 45, 60]
+
+    /// The rotation for a number of workout days per week.
+    static func days(forDaysPerWeek count: Int) -> [WorkoutDay] {
+        switch count {
+        case ...2: fullBody2
+        case 3: fullBody3
+        case 4: upperLower
+        case 5: upperLower + [fullBodyExtra]
+        default: pushPullLegs
         }
     }
 
-    var focus: String {
-        slots.map(\.title).joined(separator: " · ")
+    static func days(for profile: UserProfile) -> [WorkoutDay] {
+        days(forDaysPerWeek: profile.workoutWeekdays.count)
+    }
+
+    /// Looks up a day from a saved workout's ID.
+    static func day(id: String) -> WorkoutDay {
+        allDays.first { $0.id == id }
+            ?? WorkoutDay(id: id, title: "Day \(id)", badge: id, kind: .fullBody, slots: [])
+    }
+
+    /// A plain-English description of the plan style.
+    static func planDescription(forDaysPerWeek count: Int) -> String {
+        switch count {
+        case ...2: "Full body, alternating Day A and Day B."
+        case 3: "Full body, rotating Day A → B → C."
+        case 4: "Upper / lower split: Upper A, Lower A, Upper B, Lower B."
+        case 5: "Upper / lower twice each, plus a full-body day."
+        default: "Push / Pull / Legs, twice each."
+        }
+    }
+
+    /// A sensible default spread of weekdays (1 = Sunday … 7 = Saturday).
+    static func suggestedWeekdays(forDaysPerWeek count: Int) -> Set<Int> {
+        switch count {
+        case ...2: [2, 5]             // Mon, Thu
+        case 3: [2, 4, 6]             // Mon, Wed, Fri
+        case 4: [2, 3, 5, 6]          // Mon, Tue, Thu, Fri
+        case 5: [2, 3, 4, 5, 6]       // Mon–Fri
+        default: [2, 3, 4, 5, 6, 7]   // Mon–Sat
+        }
     }
 }
 
@@ -53,6 +174,21 @@ struct PlannedWorkout: Identifiable {
 
     var id: String { day.id }
 
+    /// Every muscle group this workout hits, head to toe.
+    var targetedMuscles: [MuscleGroup] {
+        let worked = Set(exercises.flatMap(\.exercise.muscles))
+        return MuscleGroup.allCases.filter { worked.contains($0) }
+    }
+
+    /// Body areas this workout actually covers, e.g. "Chest · Back · Shoulders · Arms".
+    var focus: String {
+        var areas: [String] = []
+        for item in exercises where !areas.contains(item.exercise.pattern.areaTitle) {
+            areas.append(item.exercise.pattern.areaTitle)
+        }
+        return areas.joined(separator: " · ")
+    }
+
     /// Rough length: sets × (work + rest), in minutes.
     var estimatedMinutes: Int {
         let seconds = exercises.reduce(0) { total, item in
@@ -64,19 +200,39 @@ struct PlannedWorkout: Identifiable {
     }
 }
 
-/// Builds Day A/B/C from the user's profile: equipment, ability, joints and goal.
+/// Builds the week's workouts from the profile: days per week, workout length,
+/// equipment, ability, joints and goal.
 enum WorkoutBuilder {
 
-    /// Builds all three days at once so exercises aren't repeated across the week.
+    /// How many movement slots fit in a workout of this length.
+    static func slotCount(forMinutes minutes: Int) -> Int {
+        switch minutes {
+        case ..<25: 4
+        case ..<40: 5
+        case ..<55: 7
+        default: 8
+        }
+    }
+
+    /// Builds every day at once, so exercises vary across the week and never repeat within a day.
     static func buildWeek(for profile: UserProfile) -> [PlannedWorkout] {
-        var used: Set<String> = []
-        return WorkoutDay.allCases.map { day in
-            let exercises = day.slots.compactMap { pattern -> PlannedExercise? in
-                guard let exercise = pick(pattern, for: profile, avoiding: used)
-                        ?? (pattern == .carry ? pick(.core, for: profile, avoiding: used) : nil)
-                else { return nil }
-                used.insert(exercise.id)
-                return prescribe(exercise, for: profile)
+        var weekUsed: Set<String> = []
+        let minutes = profile.workoutMinutes
+        let addFinisher = minutes >= 45 && profile.goalType != .buildMuscle
+
+        return WorkoutPlans.days(for: profile).map { day in
+            var dayUsed: Set<String> = []
+            var slots = Array(day.slots.prefix(slotCount(forMinutes: minutes)))
+            if addFinisher { slots.append(.conditioning) }
+
+            var exercises: [PlannedExercise] = []
+            for (index, pattern) in slots.enumerated() {
+                let exercise = pick(pattern, for: profile, avoiding: weekUsed, excluding: dayUsed)
+                    ?? fallback(for: pattern).flatMap { pick($0, for: profile, avoiding: weekUsed, excluding: dayUsed) }
+                guard let exercise else { continue }
+                dayUsed.insert(exercise.id)
+                weekUsed.insert(exercise.id)
+                exercises.append(prescribe(exercise, for: profile, isMainLift: index < 2))
             }
             return PlannedWorkout(day: day, exercises: exercises)
         }
@@ -86,14 +242,25 @@ enum WorkoutBuilder {
         buildWeek(for: profile).first { $0.day == day } ?? PlannedWorkout(day: day, exercises: [])
     }
 
+    /// What to use when nothing fits a slot (e.g. no carry without dumbbells).
+    private static func fallback(for pattern: MovementPattern) -> MovementPattern? {
+        switch pattern {
+        case .carry, .conditioning: .core
+        case .shoulders, .triceps: .push
+        case .biceps: .pull
+        case .calves: .squat
+        default: nil
+        }
+    }
+
     // MARK: - Level
 
     /// The starting difficulty for a movement pattern, from the ability answers and experience.
     static func level(for pattern: MovementPattern, profile: UserProfile) -> Difficulty {
         let tier: Int = switch pattern {
-        case .push, .pull: profile.pushUpTier
-        case .core, .carry: profile.plankTier
-        case .squat, .lunge, .hinge: profile.squatTier
+        case .push, .pull, .shoulders, .biceps, .triceps: profile.pushUpTier
+        case .core, .carry, .conditioning: profile.plankTier
+        case .squat, .lunge, .hinge, .calves: profile.squatTier
         }
 
         var result: Difficulty = switch tier {
@@ -116,13 +283,21 @@ enum WorkoutBuilder {
     // MARK: - Picking
 
     /// Chooses the best exercise for a slot: the hardest one at or below the user's level
-    /// that fits their equipment and joints, preferring ones not already used this week.
-    static func pick(_ pattern: MovementPattern, for profile: UserProfile, avoiding used: Set<String>) -> Exercise? {
+    /// that fits their equipment and joints. Never repeats within a day; prefers ones
+    /// not already used this week.
+    static func pick(
+        _ pattern: MovementPattern,
+        for profile: UserProfile,
+        avoiding weekUsed: Set<String>,
+        excluding dayUsed: Set<String> = []
+    ) -> Exercise? {
         let userLevel = level(for: pattern, profile: profile)
-        let candidates = ExerciseLibrary.all.filter { $0.pattern == pattern && isAvailable($0, for: profile) }
+        let candidates = ExerciseLibrary.all.filter {
+            $0.pattern == pattern && isAvailable($0, for: profile) && !dayUsed.contains($0.id)
+        }
         guard !candidates.isEmpty else { return nil }
 
-        let fresh = candidates.filter { !used.contains($0.id) }
+        let fresh = candidates.filter { !weekUsed.contains($0.id) }
         let pool = fresh.isEmpty ? candidates : fresh
 
         let atOrBelow = pool.filter { $0.difficulty <= userLevel }
@@ -158,9 +333,10 @@ enum WorkoutBuilder {
 
     // MARK: - Sets and reps
 
-    static func prescribe(_ exercise: Exercise, for profile: UserProfile) -> PlannedExercise {
+    static func prescribe(_ exercise: Exercise, for profile: UserProfile, isMainLift: Bool = false) -> PlannedExercise {
         let goal = profile.goalType
-        let sets = 3
+        // Longer workouts give the first two (main) lifts an extra set.
+        let sets = (profile.workoutMinutes >= 45 && isMainLift && exercise.measure == .reps) ? 4 : 3
 
         switch exercise.measure {
         case .time:
@@ -178,16 +354,20 @@ enum WorkoutBuilder {
             return PlannedExercise(exercise: exercise, sets: sets, reps: nil, seconds: seconds, restSeconds: profile.restSeconds)
 
         case .reps:
-            let reps: ClosedRange<Int> = switch goal {
-            case .loseFat: 12...15
-            case .both, .buildMuscle: 8...12
+            let reps: ClosedRange<Int> = switch exercise.pattern {
+            case .calves:
+                15...20
+            case .shoulders, .biceps, .triceps:
+                goal == .loseFat ? 12...15 : 10...15
+            default:
+                goal == .loseFat ? 12...15 : 8...12
             }
             return PlannedExercise(exercise: exercise, sets: sets, reps: reps, seconds: nil, restSeconds: profile.restSeconds)
         }
     }
 }
 
-/// Maps the calendar onto the A → B → C rotation.
+/// Maps the calendar onto the weekly rotation.
 enum WorkoutSchedule {
 
     /// The profile's workout days in week order (e.g. Sun, Wed, Fri).
@@ -198,10 +378,11 @@ enum WorkoutSchedule {
     /// Which workout falls on this date, or nil for a rest day.
     static func workoutDay(on date: Date, for profile: UserProfile) -> WorkoutDay? {
         let weekday = Calendar.current.component(.weekday, from: date)
+        let rotation = WorkoutPlans.days(for: profile)
         guard let index = orderedWorkoutDays(for: profile).firstIndex(of: weekday),
-              index < WorkoutDay.allCases.count
+              index < rotation.count
         else { return nil }
-        return WorkoutDay.allCases[index]
+        return rotation[index]
     }
 
     /// The next scheduled workout strictly after the given date.

@@ -26,6 +26,7 @@ struct RootView: View {
 /// The app's main tab bar.
 struct MainTabView: View {
     let profile: UserProfile
+    @Environment(\.modelContext) private var context
 
     var body: some View {
         TabView {
@@ -38,19 +39,11 @@ struct MainTabView: View {
             }
 
             Tab("Progress", systemImage: "chart.line.uptrend.xyaxis") {
-                PlaceholderScreen(
-                    title: "Progress",
-                    systemImage: "chart.line.uptrend.xyaxis",
-                    message: "Charts of your weight and body fat are coming soon."
-                )
+                ProgressScreen(profile: profile)
             }
 
             Tab("History", systemImage: "calendar") {
-                PlaceholderScreen(
-                    title: "History",
-                    systemImage: "calendar",
-                    message: "Your past workouts and weigh-ins will show up here."
-                )
+                HistoryScreen(profile: profile)
             }
 
             Tab("Profile", systemImage: "person.crop.circle") {
@@ -58,6 +51,10 @@ struct MainTabView: View {
             }
         }
         .tint(Theme.blue)
+        .task {
+            // Tidy up any workout that was interrupted by the app closing.
+            WorkoutSession.finalizeUnfinished(in: context)
+        }
     }
 }
 

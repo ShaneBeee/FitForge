@@ -26,6 +26,8 @@ final class UserProfile {
     var activityLevelRaw: String = ActivityLevel.mostlySitting.rawValue
     var experienceRaw: String = Experience.new.rawValue
     var jointCautionsRaw: [String] = []
+    /// "male", "female" or "" (not chosen yet) — only used to pick body fat ranges.
+    var bodyFatRangesRaw: String = ""
 
     // Ability answers — tier 0…3 for each AbilityQuestion
     var pushUpTier: Int = 0
@@ -33,9 +35,11 @@ final class UserProfile {
     var squatTier: Int = 0
 
     // Schedule — Calendar weekday numbers (1 = Sunday … 7 = Saturday)
-    var workoutWeekdays: [Int] = [2, 4, 6]   // Mon, Wed, Fri
+    var workoutWeekdays: [Int] = [2, 4, 6]   // Mon, Wed, Fri — the count sets the plan (2–6 days)
     var weighInWeekday: Int = 1              // Sunday
     var restSeconds: Int = 60
+    /// Target workout length in minutes (20, 30, 45 or 60).
+    var workoutMinutes: Int = 20
 
     var hasCompletedSetup: Bool = false
 
@@ -64,6 +68,11 @@ final class UserProfile {
     var jointCautions: Set<JointCaution> {
         get { Set(jointCautionsRaw.compactMap(JointCaution.init(rawValue:))) }
         set { jointCautionsRaw = newValue.map(\.rawValue).sorted() }
+    }
+
+    var bodyFatRanges: BodyFatRanges? {
+        get { BodyFatRanges(rawValue: bodyFatRangesRaw) }
+        set { bodyFatRangesRaw = newValue?.rawValue ?? "" }
     }
 
     func tier(for question: AbilityQuestion) -> Int {

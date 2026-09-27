@@ -30,6 +30,7 @@ final class OnboardingDraft {
     var birthDate = Calendar.current.date(byAdding: .year, value: -35, to: .now) ?? .now
     var activityLevel: ActivityLevel = .mostlySitting
     var experience: Experience = .new
+    var bodyFatRanges: BodyFatRanges?
     private(set) var weighInDateFromHealth: Date?
     private var didPrefill = false
 
@@ -47,6 +48,8 @@ final class OnboardingDraft {
 
     // Schedule
     var workoutWeekdays: Set<Int> = [2, 4, 6]   // Mon, Wed, Fri
+    private(set) var daysPerWeek = 3
+    var workoutMinutes = 20
     var weighInWeekday = 1                       // Sunday
     var restSeconds = GoalType.both.defaultRestSeconds
     private var restWasCustomized = false
@@ -54,7 +57,45 @@ final class OnboardingDraft {
     // Why
     var why = ""
 
-    static let requiredWorkoutDays = 3
+    init() {}
+
+    /// Starts a draft from an existing profile, for editing one section of it.
+    convenience init(editing profile: UserProfile) {
+        self.init()
+        didPrefill = true   // never overwrite saved answers with Health data while editing
+
+        name = profile.name
+        why = profile.why
+
+        goalType = profile.goalType
+        targetWeightLbs = profile.targetWeightLbs
+        targetBodyFatPercent = profile.targetBodyFatPercent
+
+        currentWeightLbs = profile.startWeightLbs
+        currentBodyFatPercent = profile.startBodyFatPercent
+        if let height = profile.heightInches { heightTotalInches = Int(height.rounded()) }
+        if let birthDate = profile.birthDate { self.birthDate = birthDate }
+        activityLevel = profile.activityLevel
+        experience = profile.experience
+        bodyFatRanges = profile.bodyFatRanges
+
+        for item in profile.equipment ?? [] {
+            selectedEquipment.insert(item.kind)
+            if let weight = item.weightLbs { equipmentWeights[item.kind] = weight }
+        }
+
+        for question in AbilityQuestion.allCases {
+            abilityTiers[question] = profile.tier(for: question)
+        }
+        jointCautions = profile.jointCautions
+
+        workoutWeekdays = Set(profile.workoutWeekdays)
+        daysPerWeek = max(2, profile.workoutWeekdays.count)
+        workoutMinutes = profile.workoutMinutes
+        weighInWeekday = profile.weighInWeekday
+        restSeconds = profile.restSeconds
+        restWasCustomized = profile.restSeconds != profile.goalType.defaultRestSeconds
+    }
 
     // MARK: - Derived
 
@@ -74,7 +115,7 @@ final class OnboardingDraft {
 
     var canContinue: Bool {
         switch step {
-        case .schedule: workoutWeekdays.count == Self.requiredWorkoutDays
+        case .schedule: workoutWeekdays.count == daysPerWeek
         default: true
         }
     }
@@ -104,9 +145,16 @@ final class OnboardingDraft {
     func toggleWorkoutDay(_ weekday: Int) {
         if workoutWeekdays.contains(weekday) {
             workoutWeekdays.remove(weekday)
-        } else if workoutWeekdays.count < Self.requiredWorkoutDays {
+        } else if workoutWeekdays.count < daysPerWeek {
             workoutWeekdays.insert(weekday)
         }
+    }
+
+    /// Changes how many days a week, and suggests a fresh spread of days to match.
+    func setDaysPerWeek(_ count: Int) {
+        guard count != daysPerWeek else { return }
+        daysPerWeek = count
+        workoutWeekdays = WorkoutPlans.suggestedWeekdays(forDaysPerWeek: count)
     }
 
     func next() {
@@ -143,6 +191,52 @@ final class OnboardingDraft {
 
     // MARK: - Save
 
+    /// Writes one edited section back to an existing profile.
+    func apply(_ section: ProfileSection, to profile: UserProfile, in context: ModelContext) {
+        switch section {
+        case .about:
+            profile.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            profile.why = why.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        case .goal:
+            profile.goalType = goalType
+            profile.targetWeightLbs = targetWeightLbs
+            profile.targetBodyFatPercent = targetBodyFatPercent
+
+        case .starting:
+            profile.startWeightLbs = currentWeightLbs
+            profile.startBodyFatPercent = currentBodyFatPercent
+            profile.heightInches = Double(heightTotalInches)
+            profile.birthDate = birthDate
+            profile.activityLevel = activityLevel
+            profile.experience = experience
+            profile.bodyFatRanges = bodyFatRanges
+
+        case .equipment:
+            for item in profile.equipment ?? [] {
+                context.delete(item)
+            }
+            for kind in EquipmentKind.allCases where selectedEquipment.contains(kind) {
+                let item = EquipmentItem(kind: kind, weightLbs: kind.hasWeight ? equipmentWeights[kind] : nil)
+                context.insert(item)
+                item.profile = profile
+            }
+
+        case .ability:
+            for question in AbilityQuestion.allCases {
+                profile.setTier(abilityTiers[question] ?? 0, for: question)
+            }
+            profile.jointCautions = jointCautions
+
+        case .schedule:
+            profile.workoutWeekdays = workoutWeekdays.sorted()
+            profile.workoutMinutes = workoutMinutes
+            profile.weighInWeekday = weighInWeekday
+            profile.restSeconds = restSeconds
+        }
+        try? context.save()
+    }
+
     /// Creates the profile, equipment and starting weigh-in.
     func save(in context: ModelContext) {
         let profile = UserProfile()
@@ -160,12 +254,14 @@ final class OnboardingDraft {
         profile.startBodyFatPercent = currentBodyFatPercent
         profile.activityLevel = activityLevel
         profile.experience = experience
+        profile.bodyFatRanges = bodyFatRanges
         profile.jointCautions = jointCautions
         for question in AbilityQuestion.allCases {
             profile.setTier(abilityTiers[question] ?? 0, for: question)
         }
 
         profile.workoutWeekdays = workoutWeekdays.sorted()
+        profile.workoutMinutes = workoutMinutes
         profile.weighInWeekday = weighInWeekday
         profile.restSeconds = restSeconds
 

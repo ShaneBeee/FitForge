@@ -113,6 +113,45 @@ final class HealthKitManager {
         return Calendar.current.date(from: components)
     }
 
+    // MARK: - History
+
+    /// Weight readings (lb) since a date, oldest first, one per day (the latest that day).
+    func weightHistory(since start: Date) async -> [Reading] {
+        await history(.bodyMass, unit: .pound(), since: start)
+    }
+
+    /// Body fat readings (percent, e.g. 21.4) since a date, oldest first, one per day.
+    func bodyFatHistory(since start: Date) async -> [Reading] {
+        await history(.bodyFatPercentage, unit: .percent(), since: start)
+            .map { Reading(value: $0.value * 100, date: $0.date) }
+    }
+
+    private func history(_ identifier: HKQuantityTypeIdentifier, unit: HKUnit, since start: Date) async -> [Reading] {
+        guard isAvailable, !needsAuthorization else { return [] }
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: nil)
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.quantitySample(type: HKQuantityType(identifier), predicate: predicate)],
+            sortDescriptors: [SortDescriptor(\.endDate, order: .forward)]
+        )
+        do {
+            let samples = try await descriptor.result(for: store)
+            let readings = samples.map { Reading(value: $0.quantity.doubleValue(for: unit), date: $0.endDate) }
+            return Self.onePerDay(readings)
+        } catch {
+            lastError = error.localizedDescription
+            return []
+        }
+    }
+
+    /// Keeps the last reading of each day, so repeat weigh-ins don't clutter the charts.
+    private static func onePerDay(_ readings: [Reading]) -> [Reading] {
+        var byDay: [Date: Reading] = [:]
+        for reading in readings {
+            byDay[Calendar.current.startOfDay(for: reading.date)] = reading
+        }
+        return byDay.values.sorted { $0.date < $1.date }
+    }
+
     // MARK: - Writing
 
     /// Saves a finished strength workout to Apple Health.

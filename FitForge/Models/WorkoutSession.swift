@@ -12,7 +12,7 @@ enum SessionStatus: String, Codable {
 final class WorkoutSession {
     var startDate: Date = Date.now
     var endDate: Date? = nil
-    var dayRaw: String = WorkoutDay.a.rawValue
+    var dayRaw: String = "A"
     var statusRaw: String = SessionStatus.inProgress.rawValue
     var savedToHealth: Bool = false
 
@@ -20,13 +20,13 @@ final class WorkoutSession {
     var sets: [SetLog]? = []
 
     init(day: WorkoutDay, startDate: Date = .now) {
-        self.dayRaw = day.rawValue
+        self.dayRaw = day.id
         self.startDate = startDate
     }
 
     var day: WorkoutDay {
-        get { WorkoutDay(rawValue: dayRaw) ?? .a }
-        set { dayRaw = newValue.rawValue }
+        get { WorkoutPlans.day(id: dayRaw) }
+        set { dayRaw = newValue.id }
     }
 
     var status: SessionStatus {

@@ -1,23 +1,27 @@
 import SwiftUI
 import SwiftData
 
-/// Shows today's workout (or the next one on a rest day), with Day A/B/C browsable.
+/// Shows today's workout (or the next one on a rest day), with every day in the rotation browsable.
 struct WorkoutView: View {
     let profile: UserProfile
 
     @Environment(\.modelContext) private var context
     @Environment(HealthKitManager.self) private var health
-    @State private var selectedDay: WorkoutDay = .a
+    @State private var selectedDayID: String?
     @State private var detail: PlannedExercise?
     @State private var didSetInitialDay = false
     @State private var activeWorkout: WorkoutEngine?
+    @Query private var sessions: [WorkoutSession]
 
     private var week: [PlannedWorkout] { WorkoutBuilder.buildWeek(for: profile) }
+    private var schedule: [ScheduledWorkout] { WeekSchedule.week(containing: .now, profile: profile, sessions: sessions) }
+    private var todaySlot: ScheduledWorkout? { schedule.first { Calendar.current.isDateInToday($0.date) } }
+    private var makeUp: ScheduledWorkout? { schedule.first { $0.status == .missed } }
     private var todaysDay: WorkoutDay? { WorkoutSchedule.workoutDay(on: .now, for: profile) }
     private var next: (date: Date, day: WorkoutDay)? { WorkoutSchedule.nextWorkout(after: .now, for: profile) }
 
     private var selectedWorkout: PlannedWorkout? {
-        week.first { $0.day == selectedDay }
+        week.first { $0.day.id == selectedDayID } ?? week.first
     }
 
     var body: some View {
@@ -26,12 +30,7 @@ struct WorkoutView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     todayCard
 
-                    Picker("Workout", selection: $selectedDay) {
-                        ForEach(WorkoutDay.allCases) { day in
-                            Text(day.title).tag(day)
-                        }
-                    }
-                    .pickerStyle(.segmented)
+                    dayPicker
 
                     if let workout = selectedWorkout {
                         workoutHeader(workout)
@@ -60,7 +59,7 @@ struct WorkoutView: View {
                     }
                 }
                 .padding()
-                .animation(.snappy, value: selectedDay)
+                .animation(.snappy, value: selectedDayID)
             }
             .navigationTitle("Workout")
             .sheet(item: $detail) { planned in
@@ -72,26 +71,70 @@ struct WorkoutView: View {
             .onAppear {
                 guard !didSetInitialDay else { return }
                 didSetInitialDay = true
-                selectedDay = todaysDay ?? next?.day ?? .a
+                if let todaySlot, todaySlot.status == .today {
+                    selectedDayID = todaySlot.day.id
+                } else if let makeUp {
+                    selectedDayID = makeUp.day.id
+                } else {
+                    selectedDayID = (next?.day ?? todaysDay)?.id
+                }
             }
         }
     }
 
     // MARK: - Pieces
 
+    /// Chips for every workout in the rotation (2–6 of them).
+    private var dayPicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(week) { workout in
+                    let isSelected = workout.day.id == selectedWorkout?.day.id
+                    Button {
+                        selectedDayID = workout.day.id
+                    } label: {
+                        Text(workout.day.title)
+                            .font(.subheadline.weight(.semibold))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .foregroundStyle(isSelected ? .white : .primary)
+                            .background(
+                                isSelected ? AnyShapeStyle(Theme.blue) : AnyShapeStyle(.background.secondary),
+                                in: Capsule()
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .sensoryFeedback(.selection, trigger: isSelected)
+                }
+            }
+        }
+    }
+
     private var todayCard: some View {
         HStack(spacing: 14) {
-            Image(systemName: todaysDay == nil ? "moon.zzz.fill" : "flame.fill")
+            Image(systemName: todayIcon)
                 .font(.title)
                 .foregroundStyle(Theme.gradient)
                 .frame(width: 44)
 
             VStack(alignment: .leading, spacing: 2) {
-                if let todaysDay {
+                if let todaySlot, todaySlot.status == .today {
                     Text("Today")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
-                    Text("\(todaysDay.title) is on the schedule")
+                    Text("\(todaySlot.day.title) is on the schedule")
+                        .font(.headline)
+                } else if let makeUp {
+                    Text("Make-up available")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Text("\(makeUp.day.title) from \(makeUp.date.formatted(.dateTime.weekday(.wide)))")
+                        .font(.headline)
+                } else if let todaySlot, todaySlot.status == .done {
+                    Text("Today")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Text("\(todaySlot.day.title) done — nice work")
                         .font(.headline)
                 } else {
                     Text("Rest day")
@@ -108,14 +151,25 @@ struct WorkoutView: View {
         .cardStyle()
     }
 
+    private var todayIcon: String {
+        if let todaySlot, todaySlot.status == .today { return "flame.fill" }
+        if makeUp != nil { return "arrow.uturn.backward.circle.fill" }
+        if let todaySlot, todaySlot.status == .done { return "checkmark.seal.fill" }
+        return "moon.zzz.fill"
+    }
+
     private func workoutHeader(_ workout: PlannedWorkout) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(workout.day.focus)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Theme.blue)
-            Text("\(workout.exercises.count) exercises · about \(workout.estimatedMinutes) min")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(workout.focus)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.blue)
+                Text("\(workout.exercises.count) exercises · about \(workout.estimatedMinutes) min")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            MuscleTargetsCard(muscles: workout.targetedMuscles, subtitle: workout.day.kind.description)
         }
         .padding(.top, 4)
     }
@@ -140,10 +194,14 @@ struct ExerciseRow: View {
                 Text(planned.prescription)
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(.secondary)
-                HStack(spacing: 6) {
-                    tag(planned.exercise.pattern.title, systemImage: planned.exercise.pattern.systemImage)
-                    ForEach(EquipmentKind.allCases.filter { planned.exercise.equipment.contains($0) }) { kind in
-                        tag(kind.title, systemImage: kind.systemImage)
+                Text(planned.exercise.muscles.map(\.title).joined(separator: " · "))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.blue)
+                if !planned.exercise.equipment.isEmpty {
+                    HStack(spacing: 6) {
+                        ForEach(EquipmentKind.allCases.filter { planned.exercise.equipment.contains($0) }) { kind in
+                            tag(kind.title, systemImage: kind.systemImage)
+                        }
                     }
                 }
             }

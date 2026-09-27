@@ -3,6 +3,9 @@ import SwiftData
 
 struct DashboardView: View {
     @Environment(HealthKitManager.self) private var health
+    @Environment(\.modelContext) private var context
+    @Query private var sessions: [WorkoutSession]
+    @State private var activeWorkout: WorkoutEngine?
     let profile: UserProfile
 
     var body: some View {
@@ -10,6 +13,17 @@ struct DashboardView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     greeting
+
+                    TodayWorkoutCard(
+                        profile: profile,
+                        week: WeekSchedule.week(containing: .now, profile: profile, sessions: sessions)
+                    ) { day in
+                        activeWorkout = WorkoutEngine(
+                            plan: WorkoutBuilder.build(day, for: profile),
+                            context: context,
+                            health: health
+                        )
+                    }
 
                     if !profile.why.isEmpty {
                         whyCard
@@ -38,6 +52,9 @@ struct DashboardView: View {
             .task {
                 await health.checkAuthorization()
                 await health.refresh()
+            }
+            .fullScreenCover(item: $activeWorkout) { engine in
+                GuidedWorkoutView(engine: engine)
             }
         }
     }

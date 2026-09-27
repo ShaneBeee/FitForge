@@ -2,29 +2,43 @@ import SwiftUI
 import SwiftData
 import AVFoundation
 
-/// Read-only summary of the profile for now. Editing comes in a later step.
+/// The Profile tab: everything from setup, with each section editable.
 struct ProfileView: View {
     @Environment(\.modelContext) private var context
     let profile: UserProfile
     @State private var confirmReset = false
+    @State private var editing: ProfileSection?
     /// Watched so the voice name refreshes after picking a new one.
     @AppStorage(VoiceCoach.voiceDefaultsKey) private var voiceID = ""
 
     var body: some View {
         NavigationStack {
             List {
-                Section("Goal") {
+                Section {
+                    LabeledContent("Name", value: profile.name.isEmpty ? "—" : profile.name)
+                    if profile.why.isEmpty {
+                        LabeledContent("Your why", value: "Not set")
+                    } else {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Your why")
+                            Text("“\(profile.why)”")
+                                .italic()
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } header: {
+                    header(.about)
+                }
+
+                Section {
                     LabeledContent("Main goal", value: profile.goalType.title)
                     LabeledContent("Target weight", value: format(profile.targetWeightLbs, unit: "lb"))
                     LabeledContent("Target body fat", value: format(profile.targetBodyFatPercent, unit: "%"))
-                    if !profile.why.isEmpty {
-                        Text("“\(profile.why)”")
-                            .italic()
-                            .foregroundStyle(.secondary)
-                    }
+                } header: {
+                    header(.goal)
                 }
 
-                Section("Starting point") {
+                Section {
                     LabeledContent("Started", value: profile.startDate.formatted(date: .abbreviated, time: .omitted))
                     LabeledContent("Weight", value: format(profile.startWeightLbs, unit: "lb"))
                     LabeledContent("Body fat", value: format(profile.startBodyFatPercent, unit: "%"))
@@ -34,29 +48,43 @@ struct ProfileView: View {
                     }
                     LabeledContent("Activity", value: profile.activityLevel.title)
                     LabeledContent("Experience", value: profile.experience.title)
+                    LabeledContent("Body fat ranges", value: profile.bodyFatRanges?.title ?? "Not set")
+                } header: {
+                    header(.starting)
                 }
 
-                Section("Equipment") {
+                Section {
                     Label("Bodyweight", systemImage: "figure.stand")
-                    ForEach(profile.equipment ?? []) { item in
+                    ForEach(sortedEquipment) { item in
                         Label(item.displayName, systemImage: item.kind.systemImage)
                     }
+                } header: {
+                    header(.equipment)
+                } footer: {
+                    Text("Your workouts update automatically when your equipment changes.")
                 }
 
-                Section("Ability") {
+                Section {
                     ForEach(AbilityQuestion.allCases) { question in
-                        LabeledContent(label(for: question), value: question.options[profile.tier(for: question)])
+                        LabeledContent(label(for: question), value: question.options[min(profile.tier(for: question), question.options.count - 1)])
                     }
                     LabeledContent(
                         "Joints to protect",
                         value: profile.jointCautions.isEmpty ? "None" : profile.jointCautions.map(\.title).sorted().joined(separator: ", ")
                     )
+                } header: {
+                    header(.ability)
                 }
 
-                Section("Schedule") {
-                    LabeledContent("Workout days", value: profile.workoutWeekdays.map { Weekday.shortName($0) }.joined(separator: ", "))
+                Section {
+                    LabeledContent("Plan", value: "\(profile.workoutWeekdays.count) days a week · \(profile.workoutMinutes) min")
+                    LabeledContent("Workout days", value: WorkoutSchedule.orderedWorkoutDays(for: profile).map { Weekday.shortName($0) }.joined(separator: ", "))
                     LabeledContent("Weigh-in day", value: Weekday.name(profile.weighInWeekday))
                     LabeledContent("Rest between sets", value: "\(profile.restSeconds)s")
+                } header: {
+                    header(.schedule)
+                } footer: {
+                    Text(WorkoutPlans.planDescription(forDaysPerWeek: profile.workoutWeekdays.count))
                 }
 
                 Section("Coach") {
@@ -73,16 +101,39 @@ struct ProfileView: View {
                     Button("Run setup again") { confirmReset = true }
                         .foregroundStyle(Theme.teal)
                 } footer: {
-                    Text("Editing each section right here is coming soon. For now, running setup again replaces your profile. Your weigh-in history is kept.")
+                    Text("Starts first-time setup from scratch and replaces your profile. Your workout and weigh-in history is kept.")
                 }
             }
             .navigationTitle(profile.name.isEmpty ? "Profile" : profile.name)
+            .sheet(item: $editing) { section in
+                ProfileEditSheet(section: section, profile: profile)
+            }
             .confirmationDialog("Run setup again?", isPresented: $confirmReset, titleVisibility: .visible) {
                 Button("Run setup again") { resetProfile() }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("Your profile, goals and equipment will be replaced when you finish setup.")
             }
+        }
+    }
+
+    // MARK: - Pieces
+
+    private func header(_ section: ProfileSection) -> some View {
+        HStack {
+            Text(section.title)
+            Spacer()
+            Button("Edit") { editing = section }
+                .font(.subheadline.weight(.semibold))
+                .textCase(nil)
+                .foregroundStyle(Theme.blue)
+        }
+    }
+
+    private var sortedEquipment: [EquipmentItem] {
+        let order = EquipmentKind.allCases
+        return (profile.equipment ?? []).sorted {
+            (order.firstIndex(of: $0.kind) ?? 0) < (order.firstIndex(of: $1.kind) ?? 0)
         }
     }
 

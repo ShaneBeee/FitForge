@@ -9,18 +9,48 @@ struct ScheduleStep: View {
         VStack(alignment: .leading, spacing: 16) {
             StepHeader(
                 title: "Your schedule",
-                subtitle: "Pick your workout days. If life gets busy, you can always make up a missed workout later in the week.",
+                subtitle: "How often and how long can you work out? Your plan is built around it. If life gets busy, you can make up a missed workout later in the week.",
                 systemImage: "calendar"
             )
 
             FormCard {
+                Text("Days per week")
+                    .font(.headline)
+                HStack(spacing: 6) {
+                    ForEach(Array(WorkoutPlans.daysPerWeekOptions), id: \.self) { count in
+                        ChipButton(title: "\(count)", isSelected: draft.daysPerWeek == count) {
+                            draft.setDaysPerWeek(count)
+                        }
+                    }
+                }
+                Label(WorkoutPlans.planDescription(forDaysPerWeek: draft.daysPerWeek), systemImage: "list.bullet.rectangle")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.blue)
+            }
+
+            FormCard {
+                Text("Workout length")
+                    .font(.headline)
+                HStack(spacing: 6) {
+                    ForEach(WorkoutPlans.lengthOptions, id: \.self) { minutes in
+                        ChipButton(title: "\(minutes) min", isSelected: draft.workoutMinutes == minutes) {
+                            draft.workoutMinutes = minutes
+                        }
+                    }
+                }
+                Text(lengthDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            FormCard {
                 HStack {
-                    Text("Workout days")
+                    Text("Which days?")
                         .font(.headline)
                     Spacer()
-                    Text("\(draft.workoutWeekdays.count) of \(OnboardingDraft.requiredWorkoutDays)")
+                    Text("\(draft.workoutWeekdays.count) of \(draft.daysPerWeek)")
                         .font(.subheadline.monospacedDigit())
-                        .foregroundStyle(draft.canContinue ? Theme.green : .secondary)
+                        .foregroundStyle(draft.workoutWeekdays.count == draft.daysPerWeek ? Theme.green : .secondary)
                 }
 
                 HStack(spacing: 6) {
@@ -29,7 +59,7 @@ struct ScheduleStep: View {
                     }
                 }
 
-                Text("Your workouts rotate Day A → B → C through the week.")
+                Text(rotationPreview)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -67,13 +97,37 @@ struct ScheduleStep: View {
         }
     }
 
+    // MARK: - Text
+
+    private var lengthDescription: String {
+        let slots = WorkoutBuilder.slotCount(forMinutes: draft.workoutMinutes)
+        var text = "About \(slots) exercises per workout"
+        if draft.workoutMinutes >= 45 {
+            text += ", with an extra set on the main lifts"
+            if draft.goalType != .buildMuscle {
+                text += " and a short cardio finisher"
+            }
+        }
+        return text + "."
+    }
+
+    /// e.g. "Sun: Day A · Wed: Day B · Fri: Day C"
+    private var rotationPreview: String {
+        let chosen = Weekday.ordered.filter { draft.workoutWeekdays.contains($0) }
+        let rotation = WorkoutPlans.days(forDaysPerWeek: draft.daysPerWeek)
+        guard !chosen.isEmpty else { return "Tap \(draft.daysPerWeek) days." }
+        return zip(chosen, rotation)
+            .map { "\(Weekday.shortName($0)): \($1.title)" }
+            .joined(separator: " · ")
+    }
+
     private var restBinding: Binding<Int> {
         Binding(get: { draft.restSeconds }, set: { draft.setRest($0) })
     }
 
     private func dayButton(_ weekday: Int) -> some View {
         let isSelected = draft.workoutWeekdays.contains(weekday)
-        let isFull = draft.workoutWeekdays.count >= OnboardingDraft.requiredWorkoutDays
+        let isFull = draft.workoutWeekdays.count >= draft.daysPerWeek
 
         return Button {
             draft.toggleWorkoutDay(weekday)
