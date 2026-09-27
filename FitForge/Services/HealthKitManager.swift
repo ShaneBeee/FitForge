@@ -1,0 +1,115 @@
+import Foundation
+import HealthKit
+import Observation
+
+/// Everything FitForge reads from and writes to Apple Health.
+@Observable
+final class HealthKitManager {
+
+    struct Reading: Equatable {
+        let value: Double
+        let date: Date
+    }
+
+    private let store = HKHealthStore()
+
+    /// False on devices without Health (e.g. Mac).
+    let isAvailable = HKHealthStore.isHealthDataAvailable()
+
+    /// True until the user has been shown the Health permission sheet.
+    private(set) var needsAuthorization = true
+    private(set) var hasCheckedAuthorization = false
+
+    private(set) var latestWeight: Reading?        // lb
+    private(set) var latestBodyFat: Reading?       // percent, e.g. 21.4
+    private(set) var latestHeight: Reading?        // inches
+    private(set) var birthDate: Date?
+    private(set) var isLoading = false
+    private(set) var lastError: String?
+
+    // MARK: - Types
+
+    private var readTypes: Set<HKObjectType> {
+        [
+            HKQuantityType(.bodyMass),
+            HKQuantityType(.bodyFatPercentage),
+            HKQuantityType(.leanBodyMass),
+            HKQuantityType(.bodyMassIndex),
+            HKQuantityType(.height),
+            HKQuantityType(.heartRate),
+            HKCharacteristicType(.dateOfBirth),
+            HKObjectType.workoutType()
+        ]
+    }
+
+    private var shareTypes: Set<HKSampleType> {
+        [
+            HKObjectType.workoutType(),
+            HKQuantityType(.activeEnergyBurned)
+        ]
+    }
+
+    // MARK: - Authorization
+
+    /// Checks whether the permission sheet still needs to be shown.
+    /// (For privacy, iOS never tells apps whether *read* access was granted —
+    /// only whether the user has been asked.)
+    func checkAuthorization() async {
+        guard isAvailable else { return }
+        do {
+            let status = try await store.statusForAuthorizationRequest(toShare: shareTypes, read: readTypes)
+            needsAuthorization = (status == .shouldRequest)
+        } catch {
+            lastError = error.localizedDescription
+        }
+        hasCheckedAuthorization = true
+    }
+
+    /// Shows the Health permission sheet, then loads the latest data.
+    func requestAuthorization() async {
+        guard isAvailable else { return }
+        do {
+            try await store.requestAuthorization(toShare: shareTypes, read: readTypes)
+            needsAuthorization = false
+            await refresh()
+        } catch {
+            lastError = error.localizedDescription
+        }
+    }
+
+    // MARK: - Reading
+
+    /// Loads the most recent body stats from Health.
+    func refresh() async {
+        guard isAvailable, !needsAuthorization else { return }
+        isLoading = true
+        defer { isLoading = false }
+        lastError = nil
+
+        latestWeight = await latestSample(.bodyMass, unit: .pound())
+        latestBodyFat = await latestSample(.bodyFatPercentage, unit: .percent())
+            .map { Reading(value: $0.value * 100, date: $0.date) }   // Health stores 0.214 for 21.4%
+        latestHeight = await latestSample(.height, unit: .inch())
+        birthDate = readBirthDate()
+    }
+
+    private func latestSample(_ identifier: HKQuantityTypeIdentifier, unit: HKUnit) async -> Reading? {
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.quantitySample(type: HKQuantityType(identifier))],
+            sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)],
+            limit: 1
+        )
+        do {
+            guard let sample = try await descriptor.result(for: store).first else { return nil }
+            return Reading(value: sample.quantity.doubleValue(for: unit), date: sample.endDate)
+        } catch {
+            lastError = error.localizedDescription
+            return nil
+        }
+    }
+
+    private func readBirthDate() -> Date? {
+        guard let components = try? store.dateOfBirthComponents() else { return nil }
+        return Calendar.current.date(from: components)
+    }
+}
