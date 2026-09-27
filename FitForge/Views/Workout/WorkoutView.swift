@@ -1,12 +1,16 @@
 import SwiftUI
+import SwiftData
 
 /// Shows today's workout (or the next one on a rest day), with Day A/B/C browsable.
 struct WorkoutView: View {
     let profile: UserProfile
 
+    @Environment(\.modelContext) private var context
+    @Environment(HealthKitManager.self) private var health
     @State private var selectedDay: WorkoutDay = .a
     @State private var detail: PlannedExercise?
     @State private var didSetInitialDay = false
+    @State private var activeWorkout: WorkoutEngine?
 
     private var week: [PlannedWorkout] { WorkoutBuilder.buildWeek(for: profile) }
     private var todaysDay: WorkoutDay? { WorkoutSchedule.workoutDay(on: .now, for: profile) }
@@ -32,6 +36,19 @@ struct WorkoutView: View {
                     if let workout = selectedWorkout {
                         workoutHeader(workout)
 
+                        Button {
+                            activeWorkout = WorkoutEngine(plan: workout, context: context, health: health)
+                        } label: {
+                            Label("Start \(workout.day.title)", systemImage: "play.fill")
+                                .font(.title3.weight(.bold))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 54)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .buttonBorderShape(.capsule)
+                        .tint(Theme.blue)
+                        .disabled(workout.exercises.isEmpty)
+
                         ForEach(Array(workout.exercises.enumerated()), id: \.element.id) { index, planned in
                             Button {
                                 detail = planned
@@ -40,11 +57,6 @@ struct WorkoutView: View {
                             }
                             .buttonStyle(.plain)
                         }
-
-                        Label("Guided mode — sets, rest timers and the Ready button — is coming next.", systemImage: "sparkles")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 4)
                     }
                 }
                 .padding()
@@ -53,6 +65,9 @@ struct WorkoutView: View {
             .navigationTitle("Workout")
             .sheet(item: $detail) { planned in
                 ExerciseDetailView(planned: planned)
+            }
+            .fullScreenCover(item: $activeWorkout) { engine in
+                GuidedWorkoutView(engine: engine)
             }
             .onAppear {
                 guard !didSetInitialDay else { return }

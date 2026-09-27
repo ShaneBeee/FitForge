@@ -1,11 +1,14 @@
 import SwiftUI
 import SwiftData
+import AVFoundation
 
 /// Read-only summary of the profile for now. Editing comes in a later step.
 struct ProfileView: View {
     @Environment(\.modelContext) private var context
     let profile: UserProfile
     @State private var confirmReset = false
+    /// Watched so the voice name refreshes after picking a new one.
+    @AppStorage(VoiceCoach.voiceDefaultsKey) private var voiceID = ""
 
     var body: some View {
         NavigationStack {
@@ -54,6 +57,16 @@ struct ProfileView: View {
                     LabeledContent("Workout days", value: profile.workoutWeekdays.map { Weekday.shortName($0) }.joined(separator: ", "))
                     LabeledContent("Weigh-in day", value: Weekday.name(profile.weighInWeekday))
                     LabeledContent("Rest between sets", value: "\(profile.restSeconds)s")
+                }
+
+                Section("Coach") {
+                    NavigationLink {
+                        VoicePickerView()
+                    } label: {
+                        LabeledContent("Voice", value: voiceID.isEmpty
+                            ? "Automatic (\(VoiceCoach.bestAvailableVoice()?.name ?? "Default"))"
+                            : (VoiceCoach.selectedVoice?.name ?? "Default"))
+                    }
                 }
 
                 Section {

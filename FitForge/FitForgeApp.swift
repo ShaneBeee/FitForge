@@ -13,7 +13,9 @@ struct FitForgeApp: App {
         .modelContainer(for: [
             UserProfile.self,
             EquipmentItem.self,
-            BodyMeasurement.self
+            BodyMeasurement.self,
+            WorkoutSession.self,
+            SetLog.self
         ])
     }
 }

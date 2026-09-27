@@ -14,15 +14,19 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 - **Exercise library:** 42 exercises tagged by movement, difficulty, equipment, dumbbell weight range and joint cautions
 - **Workout builder:** fills Day A/B/C from your profile, adapting to your equipment, level and joints without repeating exercises across the week
 - **A → B → C rotation** mapped onto your chosen workout days
+- **Guided workout mode:** start set → rest countdown → Ready, with skip set, skip exercise, pause, ±15s rest and a reps adjuster
+- **Voice coach:** spoken prompts that duck your music, with a choice of any installed voice (Premium and Enhanced voices supported)
+- **Haptics and alerts:** countdown taps for the last 3 seconds, plus a notification when rest ends if the phone is locked
+- **Workout saving:** every set is saved as you go, and finished workouts are saved to Apple Health as strength workouts
+- **Landscape layout** for the workout screen
 - **Profile** summary of everything entered during setup
 
 **Coming next**
 
-- Guided workout mode: start set → rest countdown → Ready, with skip set / skip exercise
 - Workout history, missed workouts and make-ups
 - Progress charts (Swift Charts)
+- Lock screen Live Activity for rest timers
 - Foundation → Build → Push phases
-- Saving workouts to Apple Health
 - Import from the original FitForge web app
 
 **Later**
@@ -52,19 +56,22 @@ FitForge/
 │   ├── BodyMeasurement.swift    Weigh-ins
 │   ├── ProfileOptions.swift     Goal, activity, equipment and other option enums
 │   ├── Exercise.swift           Exercise type, movement patterns, difficulty
-│   └── ExerciseLibrary.swift    The built-in exercise library
+│   ├── ExerciseLibrary.swift    The built-in exercise library
+│   └── WorkoutSession.swift     Saved workouts and their sets
 ├── Services/
-│   ├── HealthKitManager.swift   Apple Health permissions and reads
+│   ├── HealthKitManager.swift   Apple Health permissions, reads and workout saving
 │   ├── GoalEstimator.swift      Timeline estimates for targets
-│   └── WorkoutBuilder.swift     Builds Day A/B/C and maps the schedule
+│   ├── WorkoutBuilder.swift     Builds Day A/B/C and maps the schedule
+│   ├── WorkoutEngine.swift      Runs guided workouts (sets, rest, timers, saving)
+│   └── VoiceCoach.swift         Spoken prompts and voice selection
 ├── Theme/
 │   └── Theme.swift              Colours and card styling
 └── Views/
     ├── RootView.swift           Setup vs. main tabs
     ├── Onboarding/              First-time setup flow
     ├── Dashboard/               Home screen
-    ├── Workout/                 Workout list and exercise details
-    ├── Profile/                 Profile summary
+    ├── Workout/                 Workout list, guided mode, timer ring and summary
+    ├── Profile/                 Profile summary and voice picker
     └── Shared/                  Reusable components
 ```
 

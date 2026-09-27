@@ -112,4 +112,19 @@ final class HealthKitManager {
         guard let components = try? store.dateOfBirthComponents() else { return nil }
         return Calendar.current.date(from: components)
     }
+
+    // MARK: - Writing
+
+    /// Saves a finished strength workout to Apple Health.
+    func saveStrengthWorkout(start: Date, end: Date) async throws {
+        guard isAvailable else { return }
+        let configuration = HKWorkoutConfiguration()
+        configuration.activityType = .traditionalStrengthTraining
+        configuration.locationType = .indoor
+
+        let builder = HKWorkoutBuilder(healthStore: store, configuration: configuration, device: .local())
+        try await builder.beginCollection(at: start)
+        try await builder.endCollection(at: end)
+        _ = try await builder.finishWorkout()
+    }
 }
