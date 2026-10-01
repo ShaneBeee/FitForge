@@ -59,6 +59,9 @@ final class VoiceCoach: NSObject, AVSpeechSynthesizerDelegate {
 
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = voice ?? Self.selectedVoice
+        // A short pause first gives the audio system (especially Bluetooth headphones)
+        // time to wake up, so the start of the first word isn't clipped.
+        utterance.preUtteranceDelay = 0.25
         synthesizer.speak(utterance)
     }
 
