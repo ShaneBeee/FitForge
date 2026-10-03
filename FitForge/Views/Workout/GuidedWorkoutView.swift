@@ -90,6 +90,16 @@ struct GuidedWorkoutView: View {
                     Text(engine.startedAt, style: .timer)
                         .font(.subheadline.monospacedDigit())
                         .foregroundStyle(.secondary)
+                    if engine.watch.isConnected {
+                        HStack(spacing: 8) {
+                            Label(engine.watch.heartRate.map { "\(Int($0))" } ?? "—", systemImage: "heart.fill")
+                                .symbolEffect(.pulse, isActive: engine.watch.heartRate != nil)
+                            Label("\(Int(engine.watch.activeCalories)) cal", systemImage: "flame.fill")
+                        }
+                        .font(.caption.weight(.semibold).monospacedDigit())
+                        .foregroundStyle(Theme.green)
+                        .transition(.opacity)
+                    }
                 }
             }
             Spacer()

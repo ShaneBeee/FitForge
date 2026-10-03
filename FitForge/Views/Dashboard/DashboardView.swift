@@ -3,6 +3,7 @@ import SwiftData
 
 struct DashboardView: View {
     @Environment(HealthKitManager.self) private var health
+    @Environment(WatchWorkoutLink.self) private var watch
     @Environment(\.modelContext) private var context
     @Query private var sessions: [WorkoutSession]
     @Query(sort: \BodyMeasurement.date, order: .reverse) private var measurements: [BodyMeasurement]
@@ -42,7 +43,8 @@ struct DashboardView: View {
                             plan: WorkoutBuilder.build(day, for: profile),
                             context: context,
                             health: health,
-                            profile: profile
+                            profile: profile,
+                            watch: watch
                         )
                     }
 

@@ -7,6 +7,7 @@ struct WorkoutView: View {
 
     @Environment(\.modelContext) private var context
     @Environment(HealthKitManager.self) private var health
+    @Environment(WatchWorkoutLink.self) private var watch
     @State private var selectedDayID: String?
     @State private var detail: PlannedExercise?
     @State private var didSetInitialDay = false
@@ -36,7 +37,7 @@ struct WorkoutView: View {
                         workoutHeader(workout)
 
                         Button {
-                            activeWorkout = WorkoutEngine(plan: workout, context: context, health: health, profile: profile)
+                            activeWorkout = WorkoutEngine(plan: workout, context: context, health: health, profile: profile, watch: watch)
                         } label: {
                             Label("Start \(workout.day.title)", systemImage: "play.fill")
                                 .font(.title3.weight(.bold))

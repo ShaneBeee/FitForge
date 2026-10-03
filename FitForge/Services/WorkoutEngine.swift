@@ -53,6 +53,11 @@ final class WorkoutEngine: Identifiable {
     @ObservationIgnored private let context: ModelContext
     @ObservationIgnored private let health: HealthKitManager
     @ObservationIgnored private let profile: UserProfile
+    /// The Apple Watch connection (live heart rate and calories when a Watch is running the workout).
+    @ObservationIgnored let watch: WatchWorkoutLink
+    @ObservationIgnored private var usedWatch = false
+    @ObservationIgnored private var watchCalories: Double = 0
+    @ObservationIgnored private var watchAverageHeartRate: Double?
     @ObservationIgnored private var healthWorkout: HKWorkout?
     @ObservationIgnored private var effortCommitted = false
     @ObservationIgnored private var effortSavedToHealth = false
@@ -66,11 +71,12 @@ final class WorkoutEngine: Identifiable {
 
     private static let notificationID = "fitforge.workout.phase"
 
-    init(plan: PlannedWorkout, context: ModelContext, health: HealthKitManager, profile: UserProfile) {
+    init(plan: PlannedWorkout, context: ModelContext, health: HealthKitManager, profile: UserProfile, watch: WatchWorkoutLink) {
         self.plan = plan
         self.context = context
         self.health = health
         self.profile = profile
+        self.watch = watch
         self.session = WorkoutSession(day: plan.day)
         context.insert(session)
         try? context.save()
@@ -107,6 +113,8 @@ final class WorkoutEngine: Identifiable {
             speak("Let's go. First up, \(current.exercise.name). \(spokenTarget(current)).")
         }
         liveActivity.start(workoutTitle: plan.day.title, startedAt: session.startDate, state: liveState())
+        // Launch FitForge on the Apple Watch for live heart rate and calories (if there is one).
+        watch.startWatchWorkout()
     }
 
     func startSet() {
@@ -246,6 +254,7 @@ final class WorkoutEngine: Identifiable {
     func discard() {
         stopTimers()
         liveActivity.end(liveState(), immediately: true)
+        if watch.isConnected { watch.discardWatchWorkout() }
         context.delete(session)
         try? context.save()
     }
@@ -355,6 +364,14 @@ final class WorkoutEngine: Identifiable {
         haptic(.success)
         speak(status == .completed ? "Workout complete. Great work." : "Workout saved.")
         liveActivity.end(liveState())
+
+        // If the Watch ran the workout, it saves it to Apple Health with its own measurements.
+        if watch.isConnected {
+            usedWatch = true
+            watchCalories = watch.activeCalories
+            watchAverageHeartRate = watch.averageHeartRate
+            watch.endWatchWorkout()
+        }
         saveToHealth()
     }
 
@@ -414,6 +431,24 @@ final class WorkoutEngine: Identifiable {
         healthSaveState = .saving
         let start = session.startDate
 
+        // The Apple Watch measured this workout and saves it to Health itself, with real
+        // calories and heart rate. Just record its numbers here; no estimate, no duplicate workout.
+        if usedWatch {
+            let measured = CalorieEstimate(
+                activeCalories: watchCalories.rounded(),
+                method: .watch,
+                averageHeartRate: watchAverageHeartRate?.rounded()
+            )
+            calorieEstimate = measured
+            session.activeCalories = measured.activeCalories
+            session.calorieMethodRaw = measured.method.rawValue
+            session.averageHeartRate = measured.averageHeartRate
+            session.savedToHealth = true
+            try? context.save()
+            healthSaveState = .saved
+            return
+        }
+
         Task {
             // Estimate calories: heart rate if the Watch recorded enough, otherwise the work done.
             let heartRates = await health.heartRates(from: start, to: end)
@@ -463,15 +498,33 @@ final class WorkoutEngine: Identifiable {
     /// Call when leaving the summary: saves the final effort rating to Health.
     func commitEffort() {
         effortCommitted = true
-        guard let effort, healthWorkout != nil else { return }
+        guard let effort, healthWorkout != nil || usedWatch else { return }
         Task { await saveEffortToHealth(effort) }
     }
 
     private func saveEffortToHealth(_ score: Int) async {
-        guard let healthWorkout, !effortSavedToHealth else { return }
+        guard !effortSavedToHealth else { return }
         effortSavedToHealth = true
+
+        var workout = healthWorkout
+        if workout == nil, usedWatch, let end = session.endDate {
+            // The Watch saves its workout a few seconds after finishing, so look for it.
+            for delay in [2, 5, 10] {
+                try? await Task.sleep(for: .seconds(delay))
+                if let found = await health.strengthWorkout(near: session.startDate, end: end) {
+                    workout = found
+                    break
+                }
+            }
+            healthWorkout = workout
+        }
+
+        guard let workout else {
+            effortSavedToHealth = false
+            return
+        }
         do {
-            try await health.saveEffort(score, for: healthWorkout)
+            try await health.saveEffort(score, for: workout)
         } catch {
             effortSavedToHealth = false
         }

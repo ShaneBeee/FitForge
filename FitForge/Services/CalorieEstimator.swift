@@ -1,6 +1,8 @@
 import Foundation
 
 enum CalorieMethod: String, Codable {
+    /// Measured live by an Apple Watch workout session (most accurate).
+    case watch
     /// From heart rate recorded during the workout (e.g. by an Apple Watch).
     case heartRate
     /// From the exercises, sets and work/rest time (no heart rate available).
@@ -8,6 +10,7 @@ enum CalorieMethod: String, Codable {
 
     var description: String {
         switch self {
+        case .watch: "Measured by your Apple Watch"
         case .heartRate: "Estimated from your heart rate"
         case .activity: "Estimated from your exercises and sets"
         }

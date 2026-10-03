@@ -57,7 +57,7 @@ final class VoiceCoach: NSObject, AVSpeechSynthesizerDelegate {
             synthesizer.stopSpeaking(at: .immediate)
         }
 
-        let utterance = AVSpeechUtterance(string: text)
+        let utterance = AVSpeechUtterance(attributedString: Self.withPronunciations(text))
         utterance.voice = voice ?? Self.selectedVoice
         // A short pause first gives the audio system (especially Bluetooth headphones)
         // time to wake up, so the start of the first word isn't clipped.
@@ -68,6 +68,30 @@ final class VoiceCoach: NSObject, AVSpeechSynthesizerDelegate {
     func stop() {
         synthesizer.stopSpeaking(at: .immediate)
         releaseAudio()
+    }
+
+    /// Words the speech engine tends to misread, with how they should sound (IPA).
+    /// e.g. without this, "reps" gets read as "representatives".
+    private static let pronunciations: [String: String] = [
+        "reps": "ɹˈɛps",
+        "rep": "ɹˈɛp"
+    ]
+
+    private static func withPronunciations(_ text: String) -> NSAttributedString {
+        let result = NSMutableAttributedString(string: text)
+        let nsText = text as NSString
+        for (word, ipa) in pronunciations {
+            // Whole words only, any capitalisation.
+            guard let regex = try? NSRegularExpression(pattern: "\\b\(word)\\b", options: .caseInsensitive) else { continue }
+            for match in regex.matches(in: text, range: NSRange(location: 0, length: nsText.length)) {
+                result.addAttribute(
+                    NSAttributedString.Key(rawValue: AVSpeechSynthesisIPANotationAttribute),
+                    value: ipa,
+                    range: match.range
+                )
+            }
+        }
+        return result
     }
 
     private func releaseAudio() {

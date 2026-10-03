@@ -203,6 +203,22 @@ final class HealthKitManager {
         return try await builder.finishWorkout()
     }
 
+    /// Finds a strength workout saved around this time (e.g. by the Apple Watch).
+    func strengthWorkout(near start: Date, end: Date) async -> HKWorkout? {
+        guard isAvailable, !needsAuthorization else { return nil }
+        let predicate = HKQuery.predicateForSamples(
+            withStart: start.addingTimeInterval(-120),
+            end: end.addingTimeInterval(600)
+        )
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.workout(predicate)],
+            sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)],
+            limit: 5
+        )
+        let workouts = (try? await descriptor.result(for: store)) ?? []
+        return workouts.first { $0.workoutActivityType == .traditionalStrengthTraining }
+    }
+
     /// Saves a 1–10 effort rating and attaches it to the workout (the Fitness app's "Effort").
     func saveEffort(_ score: Int, for workout: HKWorkout) async throws {
         guard isAvailable else { return }

@@ -38,7 +38,7 @@ struct WorkoutSummaryView: View {
                     Label {
                         Text(caloriesNote(estimate))
                     } icon: {
-                        Image(systemName: estimate.method == .heartRate ? "heart.fill" : "flame.fill")
+                        Image(systemName: estimate.method == .activity ? "flame.fill" : "heart.fill")
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -76,7 +76,8 @@ struct WorkoutSummaryView: View {
     // MARK: - Calories and effort
 
     private func caloriesNote(_ estimate: CalorieEstimate) -> String {
-        var note = "About \(Int(estimate.activeCalories)) active calories. \(estimate.method.description)"
+        let amount = estimate.method == .watch ? "\(Int(estimate.activeCalories))" : "About \(Int(estimate.activeCalories))"
+        var note = "\(amount) active calories. \(estimate.method.description)"
         if let heartRate = estimate.averageHeartRate {
             note += " (average \(Int(heartRate)) bpm)"
         }

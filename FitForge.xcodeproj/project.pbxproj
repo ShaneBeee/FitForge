@@ -58,6 +58,7 @@
 		1776411F3070BFE200E68895 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		177641213070BFE200E68895 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		177641463070C67400E68895 /* FitForgeWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FitForgeWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		17A5BB8A307168190076346C /* FitForgeWatch-Watch-App-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "FitForgeWatch-Watch-App-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -75,6 +76,13 @@
 			);
 			target = 1776411C3070BFE200E68895 /* FitForgeWidgetsExtension */;
 		};
+		17A5BB9230716C680076346C /* Exceptions for "FitForge" folder in "FitForgeWatch Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Shared/WatchMessage.swift,
+			);
+			target = 177641453070C67400E68895 /* FitForgeWatch Watch App */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -82,6 +90,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				1776413B3070C15D00E68895 /* Exceptions for "FitForge" folder in "FitForgeWidgetsExtension" target */,
+				17A5BB9230716C680076346C /* Exceptions for "FitForge" folder in "FitForgeWatch Watch App" target */,
 			);
 			path = FitForge;
 			sourceTree = "<group>";
@@ -125,6 +134,7 @@
 		000000000000000000000001 = {
 			isa = PBXGroup;
 			children = (
+				17A5BB8A307168190076346C /* FitForgeWatch-Watch-App-Info.plist */,
 				170A0302306992B4007F41A4 /* README.md */,
 				000000000000000000000010 /* FitForge */,
 				177641233070BFE200E68895 /* FitForgeWidgets */,
@@ -594,12 +604,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "FitForgeWatch Watch App/FitForgeWatch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JY2B6PB6D3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "FitForgeWatch-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = FitForgeWatch;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "FitForge reads your heart rate and calories during workouts.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "FitForge saves your workouts to Apple Health.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.shanebolenbackpersonalteam.FitForge;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -627,12 +641,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "FitForgeWatch Watch App/FitForgeWatch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JY2B6PB6D3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "FitForgeWatch-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = FitForgeWatch;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "FitForge reads your heart rate and calories during workouts.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "FitForge saves your workouts to Apple Health.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.shanebolenbackpersonalteam.FitForge;
 				LD_RUNPATH_SEARCH_PATHS = (
