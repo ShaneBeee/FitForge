@@ -88,6 +88,31 @@ struct ProfileView: View {
                     Text(WorkoutPlans.planDescription(forDaysPerWeek: profile.workoutWeekdays.count))
                 }
 
+                Section {
+                    LabeledContent("Current phase", value: profile.phase.title)
+                    if let started = profile.phaseStartedDate {
+                        LabeledContent("Started", value: started.formatted(date: .abbreviated, time: .omitted))
+                    }
+                    if profile.phase != .foundation {
+                        Menu {
+                            ForEach(TrainingPhase.allCases.filter { $0.rawValue < profile.phase.rawValue }) { phase in
+                                Button(phase.title) {
+                                    profile.phase = phase
+                                    profile.phaseStartedDate = .now
+                                    try? context.save()
+                                }
+                            }
+                        } label: {
+                            Text("Go back a phase")
+                                .foregroundStyle(Theme.teal)
+                        }
+                    }
+                } header: {
+                    Text("Training phase")
+                } footer: {
+                    Text("New phases unlock on the dashboard as you progress. Going back is fine if a phase feels like too much — you can move up again from the dashboard once it's unlocked.")
+                }
+
                 Section("Coach") {
                     NavigationLink {
                         VoicePickerView()

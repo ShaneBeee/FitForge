@@ -36,11 +36,11 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 - **Missed workouts and make-ups:** a workout not done on its day is marked missed and can be made up later that week; every week starts fresh at the beginning of the rotation
 - **Dashboard:** today's workout (or a make-up) with a Start button, plus this week's plan at a glance
 - **Interrupted workouts** are tidied up automatically: sets done are kept as "ended early"
+- **Training phases (Foundation → Build → Push):** Build unlocks after 12 workouts and Push after 30, plus a 1.5% / 3.5% body fat drop (or consistently hitting the top of your rep ranges for a build-muscle goal). You choose when to start a new phase from the dashboard. Each phase moves every movement up a difficulty level; Push also adds a 4th set on the main lifts and trims rest for fat-loss goals. You can go back a phase from Profile
 - **Profile:** everything from setup, with each section (about you, goal, starting point, equipment, ability, schedule) editable in place using the same screens as setup
 
 **Coming next**
 
-- Foundation → Build → Push phases
 - Import from the original FitForge web app
 
 **Later**
@@ -79,6 +79,7 @@ FitForge/
 │   ├── WorkoutBuilder.swift     Plans for 2–6 days, builds each day, maps the schedule
 │   ├── WorkoutEngine.swift      Runs guided workouts (sets, rest, timers, saving)
 │   ├── WeekSchedule.swift       Weekly plan: done, missed, today, make-ups
+│   ├── PhaseProgress.swift      Progress toward unlocking the next training phase
 │   ├── TapeBodyFat.swift        Tape-measure body fat estimate (US Navy method)
 │   ├── CalorieEstimator.swift   Workout calories from heart rate, or from the work done
 │   ├── WorkoutLiveActivity.swift Starts, updates and ends the lock screen Live Activity

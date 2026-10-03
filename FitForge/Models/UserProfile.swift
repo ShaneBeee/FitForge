@@ -48,6 +48,10 @@ final class UserProfile {
 
     var hasCompletedSetup: Bool = false
 
+    /// Current training phase (TrainingPhase raw value) and when it started.
+    var phaseRaw: Int = 1
+    var phaseStartedDate: Date? = nil
+
     @Relationship(deleteRule: .cascade, inverse: \EquipmentItem.profile)
     var equipment: [EquipmentItem]? = []
 
@@ -78,6 +82,11 @@ final class UserProfile {
     var bodyFatRanges: BodyFatRanges? {
         get { BodyFatRanges(rawValue: bodyFatRangesRaw) }
         set { bodyFatRangesRaw = newValue?.rawValue ?? "" }
+    }
+
+    var phase: TrainingPhase {
+        get { TrainingPhase(rawValue: phaseRaw) ?? .foundation }
+        set { phaseRaw = newValue.rawValue }
     }
 
     /// Focus areas in a consistent order.

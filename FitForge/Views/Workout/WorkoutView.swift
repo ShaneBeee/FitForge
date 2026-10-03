@@ -161,6 +161,9 @@ struct WorkoutView: View {
     private func workoutHeader(_ workout: PlannedWorkout) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
+                Label("\(profile.phase.title) phase", systemImage: profile.phase.systemImage)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Theme.green)
                 Text(workout.focus)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Theme.blue)

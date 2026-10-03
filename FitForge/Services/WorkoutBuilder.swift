@@ -335,6 +335,10 @@ enum WorkoutBuilder {
         default:
             break
         }
+
+        // Each training phase after Foundation moves everything up one level.
+        let phaseBonus = profile.phase.rawValue - TrainingPhase.foundation.rawValue
+        result = Difficulty(rawValue: min(result.rawValue + phaseBonus, Difficulty.advanced.rawValue)) ?? result
         return result
     }
 
@@ -394,10 +398,13 @@ enum WorkoutBuilder {
     static func prescribe(_ exercise: Exercise, for profile: UserProfile, isMainLift: Bool = false, isFocus: Bool = false) -> PlannedExercise {
         let goal = profile.goalType
         let minutes = profile.workoutMinutes
-        // Extra set for the main lifts in longer workouts, and for focus areas from 30 minutes up.
+        // Extra set for the main lifts in longer workouts (and always in the Push phase),
+        // and for focus areas from 30 minutes up.
         let extraSet = exercise.measure == .reps
-            && ((minutes >= 45 && isMainLift) || (minutes >= 30 && isFocus))
+            && ((minutes >= 45 && isMainLift) || (minutes >= 30 && isFocus) || (profile.phase == .push && isMainLift))
         let sets = extraSet ? 4 : 3
+        // The Push phase trims rest a little for fat-loss goals.
+        let rest = (profile.phase == .push && goal != .buildMuscle) ? max(30, profile.restSeconds - 15) : profile.restSeconds
 
         switch exercise.measure {
         case .time:
@@ -412,7 +419,7 @@ enum WorkoutBuilder {
                 case .advanced: 45
                 }
             }
-            return PlannedExercise(exercise: exercise, sets: sets, reps: nil, seconds: seconds, restSeconds: profile.restSeconds, isFocus: isFocus)
+            return PlannedExercise(exercise: exercise, sets: sets, reps: nil, seconds: seconds, restSeconds: rest, isFocus: isFocus)
 
         case .reps:
             let reps: ClosedRange<Int> = switch exercise.pattern {
@@ -423,7 +430,7 @@ enum WorkoutBuilder {
             default:
                 goal == .loseFat ? 12...15 : 8...12
             }
-            return PlannedExercise(exercise: exercise, sets: sets, reps: reps, seconds: nil, restSeconds: profile.restSeconds, isFocus: isFocus)
+            return PlannedExercise(exercise: exercise, sets: sets, reps: reps, seconds: nil, restSeconds: rest, isFocus: isFocus)
         }
     }
 }

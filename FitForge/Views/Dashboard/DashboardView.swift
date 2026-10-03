@@ -46,6 +46,15 @@ struct DashboardView: View {
                         )
                     }
 
+                    PhaseCard(
+                        profile: profile,
+                        progress: PhaseEvaluator.progress(
+                            for: profile,
+                            sessions: sessions,
+                            latestBodyFat: health.latestBodyFat?.value
+                        )
+                    )
+
                     if shouldPromptForExtras {
                         weighInPrompt
                     }

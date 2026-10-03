@@ -110,6 +110,59 @@ enum JointCaution: String, CaseIterable, Identifiable, Codable {
     }
 }
 
+/// Training phases. Each one makes the workouts harder; the next unlocks as you progress.
+enum TrainingPhase: Int, CaseIterable, Identifiable, Codable {
+    case foundation = 1
+    case build = 2
+    case push = 3
+
+    var id: Int { rawValue }
+
+    var title: String {
+        switch self {
+        case .foundation: "Foundation"
+        case .build: "Build"
+        case .push: "Push"
+        }
+    }
+
+    var tagline: String {
+        switch self {
+        case .foundation: "Learn the movements and build the habit."
+        case .build: "Harder variations across the board."
+        case .push: "Harder again, with more volume and shorter rests."
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .foundation: "square.stack.3d.up.fill"
+        case .build: "hammer.fill"
+        case .push: "bolt.fill"
+        }
+    }
+
+    var next: TrainingPhase? { TrainingPhase(rawValue: rawValue + 1) }
+
+    /// Total workouts needed to unlock this phase.
+    var workoutsToUnlock: Int {
+        switch self {
+        case .foundation: 0
+        case .build: 12
+        case .push: 30
+        }
+    }
+
+    /// Body fat drop (percentage points from your start) needed to unlock this phase.
+    var bodyFatDropToUnlock: Double {
+        switch self {
+        case .foundation: 0
+        case .build: 1.5
+        case .push: 3.5
+        }
+    }
+}
+
 /// Areas to prioritize, on top of the main goal (pick up to 3).
 enum FocusArea: String, CaseIterable, Identifiable, Codable {
     case bellyFat, arms, chest, shoulders, back, abs, glutes, legs
