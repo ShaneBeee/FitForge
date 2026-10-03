@@ -36,7 +36,7 @@ struct WorkoutView: View {
                         workoutHeader(workout)
 
                         Button {
-                            activeWorkout = WorkoutEngine(plan: workout, context: context, health: health)
+                            activeWorkout = WorkoutEngine(plan: workout, context: context, health: health, profile: profile)
                         } label: {
                             Label("Start \(workout.day.title)", systemImage: "play.fill")
                                 .font(.title3.weight(.bold))

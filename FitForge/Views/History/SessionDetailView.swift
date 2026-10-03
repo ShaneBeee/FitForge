@@ -85,6 +85,18 @@ struct SessionDetailView: View {
             }
 
             Section {
+                if let calories = session.activeCalories {
+                    LabeledContent("Active calories", value: "About \(Int(calories))")
+                    if let method = session.calorieMethod {
+                        Text(method.description + (session.averageHeartRate.map { " (average \(Int($0)) bpm)" } ?? "") + ".")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                if let effort = session.effort {
+                    LabeledContent("Effort", value: "\(effort) of 10")
+                }
+
                 Label(
                     session.savedToHealth ? "Saved to Apple Health" : "Not saved to Apple Health",
                     systemImage: session.savedToHealth ? "heart.fill" : "heart.slash"

@@ -31,8 +31,21 @@ struct WorkoutSummaryView: View {
                 HStack(spacing: 12) {
                     stat("Time", Duration.seconds(duration).formatted(.time(pattern: .minuteSecond)))
                     stat("Sets done", "\(engine.completedSets.count)")
-                    stat("Skipped", "\(engine.skippedSets.count)")
+                    stat("Calories", engine.calorieEstimate.map { "\(Int($0.activeCalories))" } ?? "—")
                 }
+
+                if let estimate = engine.calorieEstimate {
+                    Label {
+                        Text(caloriesNote(estimate))
+                    } icon: {
+                        Image(systemName: estimate.method == .heartRate ? "heart.fill" : "flame.fill")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                effortPicker
 
                 VStack(spacing: 10) {
                     ForEach(Array(engine.plan.exercises.enumerated()), id: \.element.id) { index, planned in
@@ -42,7 +55,10 @@ struct WorkoutSummaryView: View {
 
                 healthStatus
 
-                Button(action: onDone) {
+                Button {
+                    engine.commitEffort()
+                    onDone()
+                } label: {
                     Text("Done")
                         .font(.title3.weight(.bold))
                         .frame(maxWidth: .infinity)
@@ -54,6 +70,67 @@ struct WorkoutSummaryView: View {
                 .padding(.top, 8)
             }
             .padding(.vertical)
+        }
+    }
+
+    // MARK: - Calories and effort
+
+    private func caloriesNote(_ estimate: CalorieEstimate) -> String {
+        var note = "About \(Int(estimate.activeCalories)) active calories. \(estimate.method.description)"
+        if let heartRate = estimate.averageHeartRate {
+            note += " (average \(Int(heartRate)) bpm)"
+        }
+        return note + "."
+    }
+
+    private var effortPicker: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("How hard was that?")
+                    .font(.headline)
+                Spacer()
+                if let effort = engine.effort {
+                    Text(effortLabel(effort))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.blue)
+                }
+            }
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 8) {
+                ForEach(1...10, id: \.self) { score in
+                    let isSelected = engine.effort == score
+                    Button {
+                        engine.setEffort(score)
+                    } label: {
+                        Text("\(score)")
+                            .font(.headline.monospacedDigit())
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .foregroundStyle(isSelected ? .white : .primary)
+                            .background(
+                                isSelected ? AnyShapeStyle(Theme.gradient) : AnyShapeStyle(.background),
+                                in: Circle()
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .sensoryFeedback(.selection, trigger: isSelected)
+                }
+            }
+
+            Text("Saved to Apple Health as the workout's effort when you tap Done.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .cardStyle()
+        .animation(.snappy, value: engine.effort)
+    }
+
+    private func effortLabel(_ score: Int) -> String {
+        switch score {
+        case ...3: "Easy"
+        case 4...6: "Moderate"
+        case 7...8: "Hard"
+        default: "All out"
         }
     }
 

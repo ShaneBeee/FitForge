@@ -22,6 +22,8 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 - **Voice coach:** spoken prompts that duck your music, with a choice of any installed voice (Premium and Enhanced voices supported)
 - **Haptics and alerts:** countdown taps for the last 3 seconds, plus a notification when rest ends if the phone is locked
 - **Workout saving:** every set is saved as you go, and finished workouts are saved to Apple Health as strength workouts
+- **Calories:** estimated from your heart rate when your Apple Watch recorded it during the workout, otherwise from the exercises and sets you did; saved with the workout so it shows in the Fitness app (Health's source priority prevents double counting with the Watch)
+- **Effort rating:** a 1–10 "How hard was that?" on the summary screen, saved to Apple Health as the workout's Effort
 - **Landscape layout** for the workout screen
 - **Progress charts:** weight and body fat history from Apple Health with goal lines, change since start, last-4-weeks change and goal progress; tap and drag to inspect any reading
 - **Where you stand:** weight, body fat, visceral fat and BMI shown on colour-coded range bars (healthy weight for your height, ACE body fat categories, the standard smart scale visceral fat rating), each with your goal marked where there is one
@@ -78,6 +80,7 @@ FitForge/
 │   ├── WorkoutEngine.swift      Runs guided workouts (sets, rest, timers, saving)
 │   ├── WeekSchedule.swift       Weekly plan: done, missed, today, make-ups
 │   ├── TapeBodyFat.swift        Tape-measure body fat estimate (US Navy method)
+│   ├── CalorieEstimator.swift   Workout calories from heart rate, or from the work done
 │   └── VoiceCoach.swift         Spoken prompts and voice selection
 ├── Theme/
 │   └── Theme.swift              Colours and card styling

@@ -57,6 +57,7 @@ struct GuidedWorkoutView: View {
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
             engine.stopTimers()
+            engine.commitEffort()
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active { engine.reconcile() }

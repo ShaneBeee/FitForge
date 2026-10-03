@@ -16,6 +16,13 @@ final class WorkoutSession {
     var statusRaw: String = SessionStatus.inProgress.rawValue
     var savedToHealth: Bool = false
 
+    /// Estimated active calories, and how they were estimated (CalorieMethod raw value).
+    var activeCalories: Double? = nil
+    var calorieMethodRaw: String = ""
+    var averageHeartRate: Double? = nil
+    /// How hard it felt, 1–10 (Apple's workout effort scale).
+    var effort: Int? = nil
+
     @Relationship(deleteRule: .cascade, inverse: \SetLog.session)
     var sets: [SetLog]? = []
 
@@ -32,6 +39,10 @@ final class WorkoutSession {
     var status: SessionStatus {
         get { SessionStatus(rawValue: statusRaw) ?? .inProgress }
         set { statusRaw = newValue.rawValue }
+    }
+
+    var calorieMethod: CalorieMethod? {
+        CalorieMethod(rawValue: calorieMethodRaw)
     }
 }
 

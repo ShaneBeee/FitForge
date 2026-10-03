@@ -3,6 +3,7 @@ import SwiftData
 import UIKit
 import UserNotifications
 import Observation
+import HealthKit
 
 /// Runs a guided workout: start set → (timed set) → rest countdown → ready for the next set.
 ///
@@ -41,12 +42,20 @@ final class WorkoutEngine: Identifiable {
     /// The most recent rep-based set, so reps can be adjusted during the rest after it.
     private(set) var lastRepsLog: SetLog?
     private(set) var healthSaveState: HealthSaveState = .notAttempted
+    /// Estimated calories, available once the workout is finished.
+    private(set) var calorieEstimate: CalorieEstimate?
+    /// How hard it felt (1–10), if rated on the summary screen.
+    private(set) var effort: Int?
 
     var startedAt: Date { session.startDate }
     var finishedAt: Date? { session.endDate }
 
     @ObservationIgnored private let context: ModelContext
     @ObservationIgnored private let health: HealthKitManager
+    @ObservationIgnored private let profile: UserProfile
+    @ObservationIgnored private var healthWorkout: HKWorkout?
+    @ObservationIgnored private var effortCommitted = false
+    @ObservationIgnored private var effortSavedToHealth = false
     @ObservationIgnored private let voice = VoiceCoach()
     @ObservationIgnored private var tickTask: Task<Void, Never>?
     @ObservationIgnored private var pausedRemaining: TimeInterval?
@@ -56,10 +65,11 @@ final class WorkoutEngine: Identifiable {
 
     private static let notificationID = "fitforge.workout.phase"
 
-    init(plan: PlannedWorkout, context: ModelContext, health: HealthKitManager) {
+    init(plan: PlannedWorkout, context: ModelContext, health: HealthKitManager, profile: UserProfile) {
         self.plan = plan
         self.context = context
         self.health = health
+        self.profile = profile
         self.session = WorkoutSession(day: plan.day)
         context.insert(session)
         try? context.save()
@@ -343,15 +353,67 @@ final class WorkoutEngine: Identifiable {
         guard !completedSets.isEmpty, let end = session.endDate else { return }
         healthSaveState = .saving
         let start = session.startDate
+
         Task {
+            // Estimate calories: heart rate if the Watch recorded enough, otherwise the work done.
+            let heartRates = await health.heartRates(from: start, to: end)
+            let age = profile.birthDate.flatMap { Calendar.current.dateComponents([.year], from: $0, to: .now).year }
+            let estimate = CalorieEstimator.estimate(
+                sets: results,
+                start: start,
+                end: end,
+                weightLbs: health.latestWeight?.value ?? profile.startWeightLbs ?? 170,
+                heightInches: profile.heightInches,
+                age: age,
+                ranges: profile.bodyFatRanges,
+                heartRates: heartRates
+            )
+            calorieEstimate = estimate
+            session.activeCalories = estimate?.activeCalories
+            session.calorieMethodRaw = estimate?.method.rawValue ?? ""
+            session.averageHeartRate = estimate?.averageHeartRate
+            try? context.save()
+
             do {
-                try await health.saveStrengthWorkout(start: start, end: end)
+                healthWorkout = try await health.saveStrengthWorkout(
+                    start: start,
+                    end: end,
+                    activeCalories: estimate?.activeCalories
+                )
                 session.savedToHealth = true
                 try? context.save()
                 healthSaveState = .saved
+
+                // If the effort was already confirmed while saving, attach it now.
+                if effortCommitted, let effort { await saveEffortToHealth(effort) }
             } catch {
                 healthSaveState = .failed
             }
+        }
+    }
+
+    /// Rates how hard the workout felt (1–10). Saved to Health when the summary is closed,
+    /// so changing your mind doesn't save several ratings.
+    func setEffort(_ score: Int) {
+        effort = score
+        session.effort = score
+        try? context.save()
+    }
+
+    /// Call when leaving the summary: saves the final effort rating to Health.
+    func commitEffort() {
+        effortCommitted = true
+        guard let effort, healthWorkout != nil else { return }
+        Task { await saveEffortToHealth(effort) }
+    }
+
+    private func saveEffortToHealth(_ score: Int) async {
+        guard let healthWorkout, !effortSavedToHealth else { return }
+        effortSavedToHealth = true
+        do {
+            try await health.saveEffort(score, for: healthWorkout)
+        } catch {
+            effortSavedToHealth = false
         }
     }
 

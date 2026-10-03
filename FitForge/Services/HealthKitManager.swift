@@ -45,7 +45,8 @@ final class HealthKitManager {
     private var shareTypes: Set<HKSampleType> {
         [
             HKObjectType.workoutType(),
-            HKQuantityType(.activeEnergyBurned)
+            HKQuantityType(.activeEnergyBurned),
+            HKQuantityType(.workoutEffortScore)
         ]
     }
 
@@ -152,18 +153,65 @@ final class HealthKitManager {
         return byDay.values.sorted { $0.date < $1.date }
     }
 
+    // MARK: - Heart rate
+
+    /// Heart rate readings (beats per minute) recorded between two times, e.g. by an Apple Watch.
+    func heartRates(from start: Date, to end: Date) async -> [Double] {
+        guard isAvailable, !needsAuthorization else { return [] }
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.quantitySample(type: HKQuantityType(.heartRate), predicate: predicate)],
+            sortDescriptors: [SortDescriptor(\.startDate, order: .forward)]
+        )
+        let unit = HKUnit.count().unitDivided(by: .minute())
+        do {
+            return try await descriptor.result(for: store).map { $0.quantity.doubleValue(for: unit) }
+        } catch {
+            lastError = error.localizedDescription
+            return []
+        }
+    }
+
     // MARK: - Writing
 
-    /// Saves a finished strength workout to Apple Health.
-    func saveStrengthWorkout(start: Date, end: Date) async throws {
-        guard isAvailable else { return }
+    /// Saves a finished strength workout to Apple Health, with estimated active calories if given.
+    ///
+    /// The calories are saved as FitForge active-energy data for the workout's time window.
+    /// If an Apple Watch also recorded active energy then, Health's data source priority
+    /// (Watch first by default) means the same minutes aren't counted twice in your totals.
+    @discardableResult
+    func saveStrengthWorkout(start: Date, end: Date, activeCalories: Double? = nil) async throws -> HKWorkout? {
+        guard isAvailable else { return nil }
         let configuration = HKWorkoutConfiguration()
         configuration.activityType = .traditionalStrengthTraining
         configuration.locationType = .indoor
 
         let builder = HKWorkoutBuilder(healthStore: store, configuration: configuration, device: .local())
         try await builder.beginCollection(at: start)
+
+        if let activeCalories, activeCalories > 0 {
+            let sample = HKQuantitySample(
+                type: HKQuantityType(.activeEnergyBurned),
+                quantity: HKQuantity(unit: .kilocalorie(), doubleValue: activeCalories),
+                start: start,
+                end: end
+            )
+            try await builder.addSamples([sample])
+        }
+
         try await builder.endCollection(at: end)
-        _ = try await builder.finishWorkout()
+        return try await builder.finishWorkout()
+    }
+
+    /// Saves a 1–10 effort rating and attaches it to the workout (the Fitness app's "Effort").
+    func saveEffort(_ score: Int, for workout: HKWorkout) async throws {
+        guard isAvailable else { return }
+        let sample = HKQuantitySample(
+            type: HKQuantityType(.workoutEffortScore),
+            quantity: HKQuantity(unit: .appleEffortScore(), doubleValue: Double(min(max(score, 1), 10))),
+            start: workout.startDate,
+            end: workout.endDate
+        )
+        try await store.relateWorkoutEffortSample(sample, with: workout, activity: nil)
     }
 }

@@ -41,7 +41,8 @@ struct DashboardView: View {
                         activeWorkout = WorkoutEngine(
                             plan: WorkoutBuilder.build(day, for: profile),
                             context: context,
-                            health: health
+                            health: health,
+                            profile: profile
                         )
                     }
 
