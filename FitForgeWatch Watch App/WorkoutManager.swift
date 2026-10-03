@@ -1,6 +1,7 @@
 import Foundation
 import HealthKit
 import WatchConnectivity
+import WatchKit
 import Observation
 
 /// Runs the Apple Watch side of a FitForge workout: a real HealthKit workout session
@@ -16,11 +17,15 @@ final class WorkoutManager: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBui
     private(set) var heartRate: Double?
     /// Active calories so far.
     private(set) var activeCalories: Double = 0
+    /// The workout as the iPhone sees it (exercise, set, rest countdown), for the control screen.
+    private(set) var phoneState: WatchWorkoutState?
 
     @ObservationIgnored private let store = HKHealthStore()
     @ObservationIgnored private var session: HKWorkoutSession?
     @ObservationIgnored private var builder: HKLiveWorkoutBuilder?
     @ObservationIgnored private var shouldDiscard = false
+    @ObservationIgnored private var restAlertTask: Task<Void, Never>?
+    @ObservationIgnored private var alertedTimerEnd: Date?
 
     private override init() {
         super.init()
@@ -77,6 +82,12 @@ final class WorkoutManager: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBui
         session?.end()
     }
 
+    /// Sends a button press to the iPhone, which runs the workout.
+    func sendCommand(_ command: WatchCommand) {
+        WKInterfaceDevice.current().play(.click)
+        send(.command(command))
+    }
+
     // MARK: - Internals
 
     private func finishCollection(at date: Date) async {
@@ -106,6 +117,10 @@ final class WorkoutManager: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBui
         heartRate = nil
         activeCalories = 0
         shouldDiscard = false
+        phoneState = nil
+        restAlertTask?.cancel()
+        restAlertTask = nil
+        alertedTimerEnd = nil
     }
 
     private func update(heartRate: Double?, calories: Double?) {
@@ -125,9 +140,50 @@ final class WorkoutManager: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBui
 
     private func handle(_ message: WatchMessage) {
         switch message {
+        case .state(let state): receive(state)
         case .end: end(discard: false)
         case .discard: end(discard: true)
-        case .started, .metrics, .stopped: break   // only sent watch → phone
+        case .started, .metrics, .stopped, .command: break   // only sent watch → phone
+        }
+    }
+
+    /// A new snapshot from the phone: show it, and tap the wrist at the key moments.
+    private func receive(_ state: WatchWorkoutState) {
+        let previous = phoneState
+        phoneState = state
+
+        if previous?.phase != state.phase || previous?.title != state.title {
+            switch state.phase {
+            case .ready where previous?.phase == .resting:
+                // Skip if the Watch already tapped when the countdown hit zero.
+                if alertedTimerEnd != previous?.timerEnd {
+                    WKInterfaceDevice.current().play(.notification)
+                }
+            case .working:
+                WKInterfaceDevice.current().play(.start)
+            case .finished:
+                WKInterfaceDevice.current().play(.success)
+            default:
+                break
+            }
+        }
+
+        scheduleRestAlert(for: state)
+    }
+
+    /// Taps the wrist the moment rest (or a timed set) runs out, even before the phone says so.
+    private func scheduleRestAlert(for state: WatchWorkoutState) {
+        restAlertTask?.cancel()
+        guard !state.isPaused,
+              state.phase == .resting || state.phase == .working,
+              let end = state.timerEnd, end > .now
+        else { return }
+
+        restAlertTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(end.timeIntervalSinceNow))
+            guard !Task.isCancelled, let self, self.phoneState?.timerEnd == end else { return }
+            self.alertedTimerEnd = end
+            WKInterfaceDevice.current().play(.notification)
         }
     }
 

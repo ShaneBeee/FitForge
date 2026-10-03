@@ -113,7 +113,10 @@ final class WorkoutEngine: Identifiable {
             speak("Let's go. First up, \(current.exercise.name). \(spokenTarget(current)).")
         }
         liveActivity.start(workoutTitle: plan.day.title, startedAt: session.startDate, state: liveState())
-        // Launch FitForge on the Apple Watch for live heart rate and calories (if there is one).
+        // Launch FitForge on the Apple Watch for live heart rate and calories (if there is one),
+        // and let its buttons control this workout.
+        watch.onCommand = { [weak self] command in self?.handleWatchCommand(command) }
+        watch.onConnect = { [weak self] in self?.sendWatchState() }
         watch.startWatchWorkout()
     }
 
@@ -379,6 +382,66 @@ final class WorkoutEngine: Identifiable {
 
     private func refreshLiveActivity() {
         liveActivity.update(liveState())
+        sendWatchState()
+    }
+
+    // MARK: - Apple Watch
+
+    /// Sends the current workout state to the Watch's control screen.
+    private func sendWatchState() {
+        watch.sendState(watchState())
+    }
+
+    /// Handles a button pressed on the Watch, exactly as if it were tapped on the phone.
+    private func handleWatchCommand(_ command: WatchCommand) {
+        switch command {
+        case .primary:
+            if isPaused {
+                togglePause()
+                return
+            }
+            switch phase {
+            case .notStarted, .ready: startSet()
+            case .working: completeSet()
+            case .resting: skipRest()
+            case .finished: break
+            }
+        case .skipSet: skipSet()
+        case .skipExercise: skipExercise()
+        case .togglePause: togglePause()
+        case .addRest: adjustRest(by: 15)
+        case .removeRest: adjustRest(by: -15)
+        }
+        // Make sure the Watch reflects the result even if nothing visibly changed.
+        sendWatchState()
+    }
+
+    private func watchState() -> WatchWorkoutState {
+        let live = liveState()
+        let watchPhase: WatchWorkoutState.Phase = switch phase {
+        case .notStarted, .ready: .ready
+        case .working: .working
+        case .resting: .resting
+        case .finished: .finished
+        }
+        let primaryLabel: String = switch phase {
+        case .notStarted, .ready: "Start set \(setIndex + 1)"
+        case .working: phaseEndsAt == nil ? "Done" : "Done early"
+        case .resting: "Skip rest"
+        case .finished: "Done"
+        }
+        return WatchWorkoutState(
+            phase: watchPhase,
+            isPaused: isPaused,
+            title: live.title,
+            detail: live.detail,
+            timerStart: live.timerStart,
+            timerEnd: live.timerEnd,
+            pausedRemaining: live.pausedRemaining,
+            setsDone: live.setsDone,
+            totalSets: live.totalSets,
+            primaryLabel: isPaused ? "Resume" : primaryLabel
+        )
     }
 
     /// What the lock screen and Dynamic Island should show right now.

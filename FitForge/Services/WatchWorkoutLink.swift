@@ -22,6 +22,11 @@ final class WatchWorkoutLink: NSObject, WCSessionDelegate {
     @ObservationIgnored private var heartRateTotal: Double = 0
     @ObservationIgnored private var heartRateCount = 0
 
+    /// Called when a button is pressed on the Watch.
+    @ObservationIgnored var onCommand: ((WatchCommand) -> Void)?
+    /// Called when the Watch's workout first connects, so the current state can be sent right away.
+    @ObservationIgnored var onConnect: (() -> Void)?
+
     /// Average heart rate over the workout so far.
     var averageHeartRate: Double? {
         heartRateCount > 0 ? heartRateTotal / Double(heartRateCount) : nil
@@ -60,6 +65,12 @@ final class WatchWorkoutLink: NSObject, WCSessionDelegate {
         isConnected = false
     }
 
+    /// Sends the latest workout state to the Watch's control screen.
+    func sendState(_ state: WatchWorkoutState) {
+        guard isConnected else { return }
+        send(.state(state))
+    }
+
     // MARK: - Internals
 
     private func resetMetrics() {
@@ -81,20 +92,28 @@ final class WatchWorkoutLink: NSObject, WCSessionDelegate {
     private func handle(_ message: WatchMessage) {
         switch message {
         case .started:
-            isConnected = true
+            markConnected()
         case .metrics(let heartRate, let calories):
-            isConnected = true
+            markConnected()
             if let heartRate, heartRate > 0 {
                 self.heartRate = heartRate
                 heartRateTotal += heartRate
                 heartRateCount += 1
             }
             activeCalories = max(activeCalories, calories)
+        case .command(let command):
+            onCommand?(command)
         case .stopped:
             isConnected = false
-        case .end, .discard:
+        case .state, .end, .discard:
             break   // only sent phone → watch
         }
+    }
+
+    private func markConnected() {
+        guard !isConnected else { return }
+        isConnected = true
+        onConnect?()
     }
 
     // MARK: - WCSessionDelegate

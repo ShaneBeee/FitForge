@@ -26,6 +26,7 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 - **Calories:** estimated from your heart rate when your Apple Watch recorded it during the workout, otherwise from the exercises and sets you did; saved with the workout so it shows in the Fitness app (Health's source priority prevents double counting with the Watch)
 - **Effort rating:** a 1–10 "How hard was that?" on the summary screen, saved to Apple Health as the workout's Effort
 - **Apple Watch app:** starting a workout on the iPhone launches FitForge on the Watch, which runs a real workout session and streams live heart rate and calories to the phone's workout screen. The Watch saves the workout to Apple Health with Apple-measured calories and heart rate (no phone estimate or duplicate workout)
+- **Apple Watch controls:** the current exercise, set and rest countdown on the wrist, with Start set / Done / Skip rest, skip set, skip exercise, pause and ±15s rest, all kept in sync with the iPhone; a wrist tap when rest is up
 - **Landscape layout** for the workout screen
 - **Progress charts:** weight and body fat history from Apple Health with goal lines, change since start, last-4-weeks change and goal progress; tap and drag to inspect any reading
 - **Where you stand:** weight, body fat, visceral fat and BMI shown on colour-coded range bars (healthy weight for your height, ACE body fat categories, the standard smart scale visceral fat rating), each with your goal marked where there is one
@@ -42,11 +43,10 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 
 **Coming next**
 
-- Apple Watch controls: current exercise, rest countdown and Ready / Done / Skip on the wrist, kept in sync with the iPhone
+- Apple TV / AirPlay big-screen workout view
 
 **Later**
 
-- Apple TV / AirPlay big-screen workout view
 - iCloud sync, iPad and Mac
 
 ## Tech
