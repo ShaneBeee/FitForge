@@ -41,11 +41,10 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 
 **Coming next**
 
-- Home screen widgets (next workout, streak, phase progress)
+- Apple Watch companion: live heart rate, rest timer and Ready/Skip controls on the wrist, with calories measured by Apple instead of estimated
 
 **Later**
 
-- Apple Watch companion (heart rate, timer and controls on the wrist)
 - Apple TV / AirPlay big-screen workout view
 - iCloud sync, iPad and Mac
 
