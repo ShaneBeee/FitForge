@@ -10,14 +10,14 @@ final class WorkoutLiveActivity {
         let attributes = WorkoutActivityAttributes(workoutTitle: workoutTitle, startedAt: startedAt)
         activity = try? Activity.request(
             attributes: attributes,
-            content: ActivityContent(state: state, staleDate: nil)
+            content: Self.content(for: state)
         )
     }
 
     func update(_ state: WorkoutActivityAttributes.ContentState) {
         guard let activity else { return }
         Task {
-            await activity.update(ActivityContent(state: state, staleDate: nil))
+            await activity.update(Self.content(for: state))
         }
     }
 
@@ -31,5 +31,12 @@ final class WorkoutLiveActivity {
                 dismissalPolicy: immediately ? .immediate : .after(.now.addingTimeInterval(5 * 60))
             )
         }
+    }
+
+    /// Marks the content as stale the moment a countdown ends, so iOS redraws the
+    /// lock screen ("Rest's up") even while FitForge is asleep.
+    private static func content(for state: WorkoutActivityAttributes.ContentState) -> ActivityContent<WorkoutActivityAttributes.ContentState> {
+        let countsDown = state.phase == .resting || state.phase == .working
+        return ActivityContent(state: state, staleDate: countsDown ? state.timerEnd : nil)
     }
 }

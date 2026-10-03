@@ -57,7 +57,7 @@ struct MetricChartCard: View {
                 VStack(alignment: .trailing, spacing: 0) {
                     Text("\(format(latest.value)) \(unit)")
                         .font(.title2.weight(.bold).monospacedDigit())
-                    Text(latest.date, format: .relative(presentation: .named))
+                    RelativeTimeText(date: latest.date)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

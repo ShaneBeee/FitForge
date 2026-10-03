@@ -14,48 +14,99 @@ private enum WidgetTheme {
 struct FitForgeWidgetsLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
-            LockScreenView(attributes: context.attributes, state: context.state)
+            let display = Display(state: context.state, isStale: context.isStale)
+            LockScreenView(attributes: context.attributes, display: display)
                 .activityBackgroundTint(Color.black.opacity(0.75))
                 .activitySystemActionForegroundColor(.white)
 
         } dynamicIsland: { context in
-            DynamicIsland {
+            let display = Display(state: context.state, isStale: context.isStale)
+            return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Label(context.attributes.workoutTitle, systemImage: PhaseIcon.name(for: context.state.phase))
+                    Label(context.attributes.workoutTitle, systemImage: display.icon)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(WidgetTheme.green)
                         .padding(.leading, 4)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    TimerText(state: context.state)
+                    TimerText(display: display)
                         .font(.title2.weight(.bold).monospacedDigit())
                         .frame(maxWidth: 90, alignment: .trailing)
                         .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(context.state.title)
+                        Text(display.title)
                             .font(.headline)
                             .lineLimit(1)
-                        Text(context.state.detail)
+                        Text(display.state.detail)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
-                        ProgressBar(state: context.state)
+                        ProgressBar(display: display)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 4)
                 }
             } compactLeading: {
-                Image(systemName: PhaseIcon.name(for: context.state.phase))
+                Image(systemName: display.icon)
                     .foregroundStyle(WidgetTheme.green)
             } compactTrailing: {
-                CompactTrailing(state: context.state)
+                CompactTrailing(display: display)
             } minimal: {
-                Image(systemName: PhaseIcon.name(for: context.state.phase))
+                Image(systemName: display.icon)
                     .foregroundStyle(WidgetTheme.green)
             }
             .keylineTint(WidgetTheme.green)
+        }
+    }
+}
+
+// MARK: - What to show
+
+/// Works out the text and icons from the state, including after a countdown has run out
+/// while the app was asleep (iOS marks the content "stale" at that moment).
+private struct Display {
+    let state: WorkoutActivityAttributes.ContentState
+    let isStale: Bool
+
+    /// The rest or timed-set countdown has finished.
+    var timerOver: Bool {
+        guard state.phase == .resting || state.phase == .working, let end = state.timerEnd else { return false }
+        return isStale || end <= .now
+    }
+
+    /// A live countdown window, when one is running.
+    var countdown: ClosedRange<Date>? {
+        guard state.phase != .paused, !timerOver, let start = state.timerStart, let end = state.timerEnd, start < end else { return nil }
+        return start...end
+    }
+
+    var title: String {
+        if timerOver && state.phase == .resting { return "Rest's up" }
+        if timerOver && state.phase == .working { return "Set complete" }
+        return state.title
+    }
+
+    var icon: String {
+        if timerOver { return "bell.fill" }
+        switch state.phase {
+        case .ready: return "figure.strengthtraining.traditional"
+        case .working: return "flame.fill"
+        case .resting: return "timer"
+        case .paused: return "pause.fill"
+        case .finished: return "checkmark.seal.fill"
+        }
+    }
+
+    /// Short label shown instead of a countdown.
+    var label: String {
+        if timerOver { return "Go" }
+        switch state.phase {
+        case .ready: return "Ready"
+        case .working: return "Go"
+        case .finished: return "Done"
+        default: return "—"
         }
     }
 }
@@ -64,12 +115,12 @@ struct FitForgeWidgetsLiveActivity: Widget {
 
 private struct LockScreenView: View {
     let attributes: WorkoutActivityAttributes
-    let state: WorkoutActivityAttributes.ContentState
+    let display: Display
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 12) {
-                Image(systemName: PhaseIcon.name(for: state.phase))
+                Image(systemName: display.icon)
                     .font(.title2)
                     .foregroundStyle(.white)
                     .frame(width: 44, height: 44)
@@ -79,11 +130,11 @@ private struct LockScreenView: View {
                     Text(attributes.workoutTitle.uppercased())
                         .font(.caption2.weight(.bold))
                         .foregroundStyle(WidgetTheme.green)
-                    Text(state.title)
+                    Text(display.title)
                         .font(.headline)
                         .foregroundStyle(.white)
                         .lineLimit(1)
-                    Text(state.detail)
+                    Text(display.state.detail)
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.7))
                         .lineLimit(1)
@@ -91,14 +142,14 @@ private struct LockScreenView: View {
 
                 Spacer(minLength: 8)
 
-                TimerText(state: state)
+                TimerText(display: display)
                     .font(.system(size: 34, weight: .bold, design: .rounded).monospacedDigit())
-                    .foregroundStyle(.white)
+                    .foregroundStyle(display.timerOver ? WidgetTheme.green : .white)
                     .multilineTextAlignment(.trailing)
                     .frame(maxWidth: 110, alignment: .trailing)
             }
 
-            ProgressBar(state: state)
+            ProgressBar(display: display)
         }
         .padding(16)
     }
@@ -106,34 +157,17 @@ private struct LockScreenView: View {
 
 // MARK: - Pieces
 
-private enum PhaseIcon {
-    static func name(for phase: WorkoutActivityAttributes.ContentState.Phase) -> String {
-        switch phase {
-        case .ready: "figure.strengthtraining.traditional"
-        case .working: "flame.fill"
-        case .resting: "timer"
-        case .paused: "pause.fill"
-        case .finished: "checkmark.seal.fill"
-        }
-    }
-}
-
 /// The big number on the right: a live countdown when there's a timer, otherwise a short label.
 private struct TimerText: View {
-    let state: WorkoutActivityAttributes.ContentState
+    let display: Display
 
     var body: some View {
-        if state.phase == .paused, let remaining = state.pausedRemaining {
+        if display.state.phase == .paused, let remaining = display.state.pausedRemaining {
             Text(Self.format(remaining))
-        } else if let start = state.timerStart, let end = state.timerEnd, end > .now {
-            Text(timerInterval: start...end, countsDown: true)
+        } else if let countdown = display.countdown {
+            Text(timerInterval: countdown, countsDown: true)
         } else {
-            switch state.phase {
-            case .ready: Text("Ready")
-            case .working: Text("Go")
-            case .finished: Text("Done")
-            default: Text("—")
-            }
+            Text(display.label)
         }
     }
 
@@ -145,16 +179,19 @@ private struct TimerText: View {
 
 /// Compact Dynamic Island: countdown during rest/timed sets, otherwise sets done.
 private struct CompactTrailing: View {
-    let state: WorkoutActivityAttributes.ContentState
+    let display: Display
 
     var body: some View {
-        if let start = state.timerStart, let end = state.timerEnd, end > .now, state.phase != .paused {
-            Text(timerInterval: start...end, countsDown: true)
+        if let countdown = display.countdown {
+            Text(timerInterval: countdown, countsDown: true)
                 .monospacedDigit()
                 .frame(maxWidth: 44)
                 .foregroundStyle(WidgetTheme.green)
+        } else if display.timerOver {
+            Text("Go")
+                .foregroundStyle(WidgetTheme.green)
         } else {
-            Text("\(state.setsDone)/\(state.totalSets)")
+            Text("\(display.state.setsDone)/\(display.state.totalSets)")
                 .monospacedDigit()
                 .foregroundStyle(WidgetTheme.green)
         }
@@ -163,18 +200,18 @@ private struct CompactTrailing: View {
 
 /// Rest/timed-set countdown bar, or overall workout progress when there's no timer.
 private struct ProgressBar: View {
-    let state: WorkoutActivityAttributes.ContentState
+    let display: Display
 
     var body: some View {
-        if let start = state.timerStart, let end = state.timerEnd, end > .now, state.phase != .paused {
-            ProgressView(timerInterval: start...end, countsDown: true) {
+        if let countdown = display.countdown {
+            ProgressView(timerInterval: countdown, countsDown: true) {
                 EmptyView()
             } currentValueLabel: {
                 EmptyView()
             }
             .tint(WidgetTheme.green)
         } else {
-            ProgressView(value: Double(state.setsDone), total: Double(max(state.totalSets, 1)))
+            ProgressView(value: Double(display.state.setsDone), total: Double(max(display.state.totalSets, 1)))
                 .tint(WidgetTheme.green)
         }
     }
@@ -195,6 +232,12 @@ extension WorkoutActivityAttributes.ContentState {
              setsDone: 4, totalSets: 12)
     }
 
+    fileprivate static var restOver: Self {
+        Self(phase: .resting, title: "Rest", detail: "Up next: Push-Up · set 2 of 3",
+             timerStart: .now.addingTimeInterval(-60), timerEnd: .now.addingTimeInterval(-1), pausedRemaining: nil,
+             setsDone: 4, totalSets: 12)
+    }
+
     fileprivate static var ready: Self {
         Self(phase: .ready, title: "Goblet Squat", detail: "Set 1 of 3 · 8–12 reps",
              timerStart: nil, timerEnd: nil, pausedRemaining: nil,
@@ -206,5 +249,6 @@ extension WorkoutActivityAttributes.ContentState {
     FitForgeWidgetsLiveActivity()
 } contentStates: {
     WorkoutActivityAttributes.ContentState.resting
+    WorkoutActivityAttributes.ContentState.restOver
     WorkoutActivityAttributes.ContentState.ready
 }

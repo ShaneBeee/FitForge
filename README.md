@@ -21,7 +21,7 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 - **Guided workout mode:** start set → rest countdown → Ready, with skip set, skip exercise, pause, ±15s rest and a reps adjuster
 - **Voice coach:** spoken prompts that duck your music, with a choice of any installed voice (Premium and Enhanced voices supported)
 - **Haptics and alerts:** countdown taps for the last 3 seconds, plus a notification when rest ends if the phone is locked
-- **Live Activity:** the current exercise, rest countdown and workout progress on the lock screen and in the Dynamic Island
+- **Live Activity:** the current exercise, rest countdown and workout progress on the lock screen and in the Dynamic Island; switches to "Rest's up" the moment rest ends, even while the app is asleep
 - **Workout saving:** every set is saved as you go, and finished workouts are saved to Apple Health as strength workouts
 - **Calories:** estimated from your heart rate when your Apple Watch recorded it during the workout, otherwise from the exercises and sets you did; saved with the workout so it shows in the Fitness app (Health's source priority prevents double counting with the Watch)
 - **Effort rating:** a 1–10 "How hard was that?" on the summary screen, saved to Apple Health as the workout's Effort
@@ -41,7 +41,7 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 
 **Coming next**
 
-- Import from the original FitForge web app
+- Home screen widgets (next workout, streak, phase progress)
 
 **Later**
 

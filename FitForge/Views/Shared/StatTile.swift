@@ -31,7 +31,7 @@ struct StatTile: View {
             }
 
             if let date {
-                Text(date, format: .relative(presentation: .named))
+                RelativeTimeText(date: date)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
