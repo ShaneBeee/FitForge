@@ -43,11 +43,12 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 
 **Coming next**
 
-- Apple TV / AirPlay big-screen workout view
+- Polish from real-world use
 
 **Later**
 
-- iCloud sync, iPad and Mac
+- Apple TV / AirPlay big-screen workout view
+- iCloud sync, iPad and Mac (needs the paid Apple Developer Program, which would also allow installing the Watch app on a Watch Xcode can't connect to)
 
 ## Tech
 
