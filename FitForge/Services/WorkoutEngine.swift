@@ -57,6 +57,7 @@ final class WorkoutEngine: Identifiable {
     @ObservationIgnored private var effortCommitted = false
     @ObservationIgnored private var effortSavedToHealth = false
     @ObservationIgnored private let voice = VoiceCoach()
+    @ObservationIgnored private let liveActivity = WorkoutLiveActivity()
     @ObservationIgnored private var tickTask: Task<Void, Never>?
     @ObservationIgnored private var pausedRemaining: TimeInterval?
     @ObservationIgnored private var setStartedAt: Date?
@@ -105,6 +106,7 @@ final class WorkoutEngine: Identifiable {
         if let current {
             speak("Let's go. First up, \(current.exercise.name). \(spokenTarget(current)).")
         }
+        liveActivity.start(workoutTitle: plan.day.title, startedAt: session.startDate, state: liveState())
     }
 
     func startSet() {
@@ -124,6 +126,7 @@ final class WorkoutEngine: Identifiable {
                 speak("Go. \(reps.lowerBound) to \(reps.upperBound) reps\(current.exercise.isUnilateral ? " per side" : "").")
             }
         }
+        refreshLiveActivity()
     }
 
     /// The user tapped Done, or a timed set ran out.
@@ -150,6 +153,7 @@ final class WorkoutEngine: Identifiable {
         beginTimedPhase(.resting, duration: TimeInterval(rest))
         haptic(.light)
         speak("Rest.")
+        refreshLiveActivity()
     }
 
     func skipSet() {
@@ -200,6 +204,7 @@ final class WorkoutEngine: Identifiable {
         hapticSecondsFired = []
         scheduleNotification()
         haptic(.light)
+        refreshLiveActivity()
     }
 
     func setRepsForLastSet(_ reps: Int) {
@@ -224,6 +229,7 @@ final class WorkoutEngine: Identifiable {
             cancelNotification()
             voice.stop()
         }
+        refreshLiveActivity()
     }
 
     func toggleVoice() {
@@ -239,6 +245,7 @@ final class WorkoutEngine: Identifiable {
     /// Throws the workout away entirely.
     func discard() {
         stopTimers()
+        liveActivity.end(liveState(), immediately: true)
         context.delete(session)
         try? context.save()
     }
@@ -281,6 +288,7 @@ final class WorkoutEngine: Identifiable {
         } else {
             speak("Rest's up. Set \(setIndex + 1) of \(current.sets).")
         }
+        refreshLiveActivity()
     }
 
     private func beginTimedPhase(_ newPhase: Phase, duration: TimeInterval) {
@@ -346,7 +354,59 @@ final class WorkoutEngine: Identifiable {
 
         haptic(.success)
         speak(status == .completed ? "Workout complete. Great work." : "Workout saved.")
+        liveActivity.end(liveState())
         saveToHealth()
+    }
+
+    // MARK: - Live Activity
+
+    private func refreshLiveActivity() {
+        liveActivity.update(liveState())
+    }
+
+    /// What the lock screen and Dynamic Island should show right now.
+    private func liveState() -> WorkoutActivityAttributes.ContentState {
+        let done = results.count
+        let total = totalSets
+        let timerStart = phaseEndsAt.map { $0.addingTimeInterval(-phaseDuration) }
+        let frozen = isPaused ? pausedRemaining : nil
+
+        switch phase {
+        case .finished:
+            let minutes = Int(((session.endDate ?? .now).timeIntervalSince(session.startDate) / 60).rounded())
+            return .init(phase: .finished, title: "Workout complete",
+                         detail: "\(completedSets.count) sets · \(minutes) min",
+                         timerStart: nil, timerEnd: nil, pausedRemaining: nil,
+                         setsDone: done, totalSets: total)
+
+        case .resting:
+            let next = current.map { "Up next: \($0.exercise.name) · set \(setIndex + 1) of \($0.sets)" } ?? "Rest"
+            return .init(phase: isPaused ? .paused : .resting, title: "Rest", detail: next,
+                         timerStart: timerStart, timerEnd: phaseEndsAt, pausedRemaining: frozen,
+                         setsDone: done, totalSets: total)
+
+        case .working:
+            return .init(phase: isPaused ? .paused : .working,
+                         title: current?.exercise.name ?? "Workout",
+                         detail: current.map { "Set \(setIndex + 1) of \($0.sets) · \(shortTarget($0))" } ?? "",
+                         timerStart: timerStart, timerEnd: phaseEndsAt, pausedRemaining: frozen,
+                         setsDone: done, totalSets: total)
+
+        case .notStarted, .ready:
+            return .init(phase: isPaused ? .paused : .ready,
+                         title: current?.exercise.name ?? "Workout",
+                         detail: current.map { "Set \(setIndex + 1) of \($0.sets) · \(shortTarget($0))" } ?? "",
+                         timerStart: nil, timerEnd: nil, pausedRemaining: nil,
+                         setsDone: done, totalSets: total)
+        }
+    }
+
+    /// e.g. "8–12 reps" or "30 sec per side"
+    private func shortTarget(_ planned: PlannedExercise) -> String {
+        let perSide = planned.exercise.isUnilateral ? " per side" : ""
+        if let seconds = planned.seconds { return "\(seconds) sec\(perSide)" }
+        if let reps = planned.reps { return "\(reps.lowerBound)–\(reps.upperBound) reps\(perSide)" }
+        return ""
     }
 
     private func saveToHealth() {
