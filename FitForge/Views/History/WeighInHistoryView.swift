@@ -18,7 +18,14 @@ struct WeighInHistoryView: View {
 
     var body: some View {
         Group {
-            if hasLoaded && weighIns.isEmpty {
+            if !hasLoaded {
+                // Something must be on screen for the list to show this view and start loading.
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text("Loading weigh-ins…")
+                        .foregroundStyle(.secondary)
+                }
+            } else if weighIns.isEmpty {
                 Text("No weigh-ins found in Apple Health for the past year.")
                     .foregroundStyle(.secondary)
             } else {
