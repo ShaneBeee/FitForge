@@ -159,7 +159,7 @@ struct PlannedExercise: Identifiable, Hashable {
     let exercise: Exercise
     let sets: Int
     /// Rep target for rep-based exercises.
-    let reps: ClosedRange<Int>?
+    var reps: ClosedRange<Int>?
     /// Hold/carry time for timed exercises.
     let seconds: Int?
     let restSeconds: Int
@@ -169,6 +169,8 @@ struct PlannedExercise: Identifiable, Hashable {
     var weightLbs: Double? = nil
     /// True when the suggested weight is a step up from last time.
     var isWeightIncrease = false
+    /// Outgrown the heaviest weight owned: lower slowly (3 seconds) with more reps instead.
+    var isSlowTempo = false
 
     var id: String { exercise.id }
 
@@ -242,7 +244,7 @@ enum WorkoutBuilder {
     /// `history` (past workouts) lets it suggest the weight used last time, or a step up.
     static func buildWeek(for profile: UserProfile, history: [WorkoutSession] = []) -> [PlannedWorkout] {
         var weekUsed: Set<String> = []
-        let lastUses = WeightProgression.lastUses(in: history)
+        let recentUses = WeightProgression.recentUses(in: history)
 
         return WorkoutPlans.days(for: profile).enumerated().map { dayIndex, day in
             var dayUsed: Set<String> = []
@@ -261,9 +263,15 @@ enum WorkoutBuilder {
                     isMainLift: index < 2,
                     isFocus: plan.focus.contains(exercise.pattern)
                 )
-                let weight = WeightProgression.suggestedWeight(for: exercise, profile: profile, lastUse: lastUses[exercise.id])
-                planned.weightLbs = weight?.weight
-                planned.isWeightIncrease = weight?.isIncrease ?? false
+                if let suggestion = WeightProgression.suggestion(for: exercise, profile: profile, uses: recentUses[exercise.id]) {
+                    planned.weightLbs = suggestion.weight
+                    planned.isWeightIncrease = suggestion.isIncrease
+                    if suggestion.isOutgrown, planned.reps != nil {
+                        // No heavier weight to move to: make it harder with slower, longer sets.
+                        planned.isSlowTempo = true
+                        planned.reps = 10...15
+                    }
+                }
                 exercises.append(planned)
             }
             return PlannedWorkout(day: day, exercises: exercises)
@@ -397,14 +405,16 @@ enum WorkoutBuilder {
     }
 
     /// Whether the user has the equipment (at a suitable weight) and no joint conflicts.
-    static func isAvailable(_ exercise: Exercise, for profile: UserProfile) -> Bool {
+    /// `adding` asks "what if they also had this?" (used by What to get next).
+    static func isAvailable(_ exercise: Exercise, for profile: UserProfile, adding extra: EquipmentKind? = nil) -> Bool {
         // Only equipment switched on for workouts (owned-but-not-yet items are left out).
-        let owned = Set(profile.equipmentInUse.map(\.kind))
+        var owned = Set(profile.equipmentInUse.map(\.kind))
+        if let extra { owned.insert(extra) }
         guard exercise.equipment.isSubset(of: owned) else { return false }
         guard exercise.cautions.isDisjoint(with: profile.jointCautions) else { return false }
 
         if let range = exercise.weightRange {
-            for kind in exercise.equipment where kind.hasWeight {
+            for kind in exercise.equipment where kind.hasWeight && kind != extra {
                 // Unknown weight counts as a fit; otherwise at least one weight must be in range.
                 let fits = profile.hasUnknownWeight(for: kind)
                     || profile.availableWeights(for: kind).contains { range.contains($0) }

@@ -182,6 +182,16 @@ struct GuidedWorkoutView: View {
 
             weightPicker
 
+            if current.isSlowTempo {
+                VStack(spacing: 4) {
+                    SlowTempoTag()
+                    Text("You've outgrown this weight, so lower each rep slowly to keep it challenging.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+
             if engine.isStartOfExercise, let cue = current.exercise.cues.first {
                 Label(cue, systemImage: "lightbulb.fill")
                     .font(.subheadline)
@@ -212,6 +222,9 @@ struct GuidedWorkoutView: View {
             Text(targetText(current))
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(.secondary)
+            if current.isSlowTempo {
+                SlowTempoTag()
+            }
             Text("Set \(engine.setIndex + 1) of \(current.sets)")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)

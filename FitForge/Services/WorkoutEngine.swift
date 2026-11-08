@@ -162,7 +162,8 @@ final class WorkoutEngine: Identifiable {
             phaseEndsAt = nil
             phaseDuration = 0
             if let reps = current.reps {
-                speak("Go. \(reps.lowerBound) to \(reps.upperBound) reps\(current.exercise.isUnilateral ? " per side" : "").")
+                let tempo = current.isSlowTempo ? " Slow on the way down." : ""
+                speak("Go. \(reps.lowerBound) to \(reps.upperBound) reps\(current.exercise.isUnilateral ? " per side" : "").\(tempo)")
             }
         }
         refreshLiveActivity()
@@ -655,8 +656,9 @@ final class WorkoutEngine: Identifiable {
         } else {
             weight = ""
         }
+        let tempo = planned.isSlowTempo ? ". Lower each rep slowly, 3 seconds down" : ""
         if let reps = planned.reps {
-            return "\(planned.sets) sets of \(reps.lowerBound) to \(reps.upperBound) reps\(perSide)\(weight)"
+            return "\(planned.sets) sets of \(reps.lowerBound) to \(reps.upperBound) reps\(perSide)\(weight)\(tempo)"
         }
         return "\(planned.sets) sets\(weight)"
     }

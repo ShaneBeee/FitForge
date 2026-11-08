@@ -213,6 +213,9 @@ struct ExerciseRow: View {
                         WeightTag(weight: weight, isIncrease: planned.isWeightIncrease)
                     }
                 }
+                if planned.isSlowTempo {
+                    SlowTempoTag()
+                }
                 Text(planned.exercise.muscles.map(\.title).joined(separator: " · "))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Theme.blue)
@@ -241,6 +244,18 @@ struct ExerciseRow: View {
             .padding(.vertical, 4)
             .background(.background, in: Capsule())
             .foregroundStyle(.secondary)
+    }
+}
+
+/// Shown when an exercise has outgrown the heaviest weight: slower lowering instead of more weight.
+struct SlowTempoTag: View {
+    var body: some View {
+        Label("Slow 3-second lowering", systemImage: "tortoise.fill")
+            .font(.caption.weight(.bold))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .foregroundStyle(Theme.teal)
+            .background(Theme.teal.opacity(0.15), in: Capsule())
     }
 }
 

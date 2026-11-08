@@ -59,6 +59,12 @@ struct ProfileView: View {
                     ForEach(sortedEquipment) { item in
                         Label(item.displayName, systemImage: item.kind.systemImage)
                     }
+                    NavigationLink {
+                        WhatToGetView(profile: profile)
+                    } label: {
+                        Label("What to get next", systemImage: "cart.fill")
+                            .foregroundStyle(Theme.blue)
+                    }
                 } header: {
                     header(.equipment)
                 } footer: {
