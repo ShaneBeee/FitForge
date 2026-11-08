@@ -62,6 +62,8 @@ final class SetLog {
     var actualSeconds: Int? = nil
     var wasSkipped: Bool = false
     var completedAt: Date = Date.now
+    /// Weight used (lb per dumbbell, or the kettlebell), when the exercise uses one.
+    var weightLbs: Double? = nil
 
     var session: WorkoutSession?
 
@@ -73,13 +75,23 @@ final class SetLog {
         self.targetRepsLow = planned.reps?.lowerBound
         self.targetRepsHigh = planned.reps?.upperBound
         self.targetSeconds = planned.seconds
+        self.weightLbs = planned.weightLbs
+    }
+
+    /// True if this set reached the top of its target (all the reps, or the full time).
+    var hitTarget: Bool {
+        guard !wasSkipped else { return false }
+        if let targetRepsHigh, let actualReps { return actualReps >= targetRepsHigh }
+        if let targetSeconds, let actualSeconds { return actualSeconds >= targetSeconds }
+        return false
     }
 
     /// e.g. "12 reps", "30 sec" or "Skipped"
     var resultText: String {
         if wasSkipped { return "Skipped" }
-        if let actualReps { return "\(actualReps) reps" }
-        if let actualSeconds { return "\(actualSeconds) sec" }
+        let weight = weightLbs.map { " @ \(EquipmentItem.format($0)) lb" } ?? ""
+        if let actualReps { return "\(actualReps) reps\(weight)" }
+        if let actualSeconds { return "\(actualSeconds) sec\(weight)" }
         return "Done"
     }
 }

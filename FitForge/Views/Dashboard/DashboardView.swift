@@ -40,7 +40,7 @@ struct DashboardView: View {
                         week: WeekSchedule.week(containing: .now, profile: profile, sessions: sessions)
                     ) { day in
                         activeWorkout = WorkoutEngine(
-                            plan: WorkoutBuilder.build(day, for: profile),
+                            plan: WorkoutBuilder.build(day, for: profile, history: sessions),
                             context: context,
                             health: health,
                             profile: profile,

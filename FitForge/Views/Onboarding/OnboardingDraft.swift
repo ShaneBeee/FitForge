@@ -41,7 +41,12 @@ final class OnboardingDraft {
 
     // Equipment
     var selectedEquipment: Set<EquipmentKind> = []
-    var equipmentWeights: [EquipmentKind: Double] = [:]
+    /// Fixed weights owned per kind (lb), e.g. dumbbells: 10, 15.
+    var fixedWeights: [EquipmentKind: Set<Double>] = [:]
+    /// Kinds owned as an adjustable set, with their lightest/heaviest settings.
+    var adjustableKinds: Set<EquipmentKind> = []
+    var adjustableMin: [EquipmentKind: Double] = [:]
+    var adjustableMax: [EquipmentKind: Double] = [:]
 
     // Ability
     var abilityTiers: [AbilityQuestion: Int] = [:]
@@ -83,7 +88,13 @@ final class OnboardingDraft {
 
         for item in profile.equipment ?? [] {
             selectedEquipment.insert(item.kind)
-            if let weight = item.weightLbs { equipmentWeights[item.kind] = weight }
+            if item.isAdjustable {
+                adjustableKinds.insert(item.kind)
+                adjustableMin[item.kind] = item.weightLbs
+                adjustableMax[item.kind] = item.maxWeightLbs
+            } else if let weight = item.weightLbs {
+                fixedWeights[item.kind, default: []].insert(weight)
+            }
         }
 
         for question in AbilityQuestion.allCases {
@@ -151,6 +162,47 @@ final class OnboardingDraft {
         } else {
             selectedEquipment.insert(kind)
         }
+    }
+
+    /// Adds or removes one fixed weight (e.g. the 15 lb pair).
+    func toggleWeight(_ weight: Double, for kind: EquipmentKind) {
+        var weights = fixedWeights[kind] ?? []
+        if weights.contains(weight) {
+            weights.remove(weight)
+        } else {
+            weights.insert(weight)
+        }
+        fixedWeights[kind] = weights
+    }
+
+    func setAdjustable(_ isAdjustable: Bool, for kind: EquipmentKind) {
+        if isAdjustable {
+            adjustableKinds.insert(kind)
+        } else {
+            adjustableKinds.remove(kind)
+        }
+    }
+
+    /// The equipment items to save for the current answers.
+    private func makeEquipmentItems() -> [EquipmentItem] {
+        var items: [EquipmentItem] = []
+        for kind in EquipmentKind.allCases where selectedEquipment.contains(kind) {
+            guard kind.hasWeight else {
+                items.append(EquipmentItem(kind: kind))
+                continue
+            }
+            if adjustableKinds.contains(kind), let low = adjustableMin[kind], let high = adjustableMax[kind] {
+                items.append(EquipmentItem(adjustable: kind, from: low, to: high))
+            } else if let weights = fixedWeights[kind], !weights.isEmpty {
+                for weight in weights.sorted() {
+                    items.append(EquipmentItem(kind: kind, weightLbs: weight))
+                }
+            } else {
+                // Owned, but the weight wasn't given — treated as "fits anything".
+                items.append(EquipmentItem(kind: kind))
+            }
+        }
+        return items
     }
 
     func toggleWorkoutDay(_ weekday: Int) {
@@ -228,8 +280,7 @@ final class OnboardingDraft {
             for item in profile.equipment ?? [] {
                 context.delete(item)
             }
-            for kind in EquipmentKind.allCases where selectedEquipment.contains(kind) {
-                let item = EquipmentItem(kind: kind, weightLbs: kind.hasWeight ? equipmentWeights[kind] : nil)
+            for item in makeEquipmentItems() {
                 context.insert(item)
                 item.profile = profile
             }
@@ -280,8 +331,7 @@ final class OnboardingDraft {
 
         context.insert(profile)
 
-        for kind in EquipmentKind.allCases where selectedEquipment.contains(kind) {
-            let item = EquipmentItem(kind: kind, weightLbs: kind.hasWeight ? equipmentWeights[kind] : nil)
+        for item in makeEquipmentItems() {
             context.insert(item)
             item.profile = profile
         }

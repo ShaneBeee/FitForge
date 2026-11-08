@@ -178,6 +178,8 @@ struct GuidedWorkoutView: View {
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(.secondary)
 
+            weightPicker
+
             if engine.isStartOfExercise, let cue = current.exercise.cues.first {
                 Label(cue, systemImage: "lightbulb.fill")
                     .font(.subheadline)
@@ -226,8 +228,53 @@ struct GuidedWorkoutView: View {
             Text("Set \(engine.setIndex + 1) of \(next.sets) · \(targetText(next))")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+            weightPicker
+                .padding(.top, 4)
         }
         .multilineTextAlignment(.center)
+    }
+
+    /// "Use 15 lb" (or "Try 20 lb"), tappable to switch to another pair you own.
+    @ViewBuilder
+    private var weightPicker: some View {
+        if let weight = engine.currentWeight {
+            let options = engine.weightOptions
+            let isIncrease = engine.current?.isWeightIncrease == true
+                && engine.weightOverrides[engine.exerciseIndex] == nil
+
+            VStack(spacing: 4) {
+                Menu {
+                    ForEach(options, id: \.self) { option in
+                        Button {
+                            engine.setWeight(option)
+                        } label: {
+                            if option == weight {
+                                Label("\(EquipmentItem.format(option)) lb", systemImage: "checkmark")
+                            } else {
+                                Text("\(EquipmentItem.format(option)) lb")
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        WeightTag(weight: "\(EquipmentItem.format(weight)) lb", isIncrease: isIncrease)
+                        if options.count > 1 {
+                            Text("Change")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Theme.blue)
+                        }
+                    }
+                }
+                .disabled(options.count < 2)
+
+                if isIncrease {
+                    Text("Up from last time — you hit every rep. Tap Change if it's too much.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+        }
     }
 
     // MARK: - Controls

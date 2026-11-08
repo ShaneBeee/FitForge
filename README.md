@@ -25,6 +25,9 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 - **Workout saving:** every set is saved as you go, and finished workouts are saved to Apple Health as strength workouts
 - **Calories:** estimated from the exercises and sets you did, blended with a heart-rate estimate when your Apple Watch recorded enough heart rate during the workout (heart-rate formulas alone run high for strength training); saved with the workout so it shows in the Fitness app (Health's source priority prevents double counting with the Watch)
 - **Effort rating:** a 1–10 "How hard was that?" on the summary screen, saved to Apple Health as the workout's Effort
+- **Multiple weights:** dumbbells and kettlebells can be fixed weights (tap every pair you own, 5–100 lb) or adjustable (enter the lightest and heaviest setting)
+- **Suggested weights:** each weighted exercise shows which pair to use (heaviest for legs and hips, middle for presses and rows, lightest for small muscles), changeable mid-workout; the weight is saved with every set
+- **Progression:** when every set of an exercise reached the top of its rep range, the next workout suggests the next weight up ("Try 20 lb")
 - **Apple Watch app:** starting a workout on the iPhone launches FitForge on the Watch, which runs a real workout session and streams live heart rate and calories to the phone's workout screen. The Watch saves the workout to Apple Health with Apple-measured calories and heart rate (no phone estimate or duplicate workout)
 - **Apple Watch controls:** the current exercise, set and rest countdown on the wrist, with Start set / Done / Skip rest, skip set, skip exercise, pause and ±15s rest, all kept in sync with the iPhone; a wrist tap when rest is up
 - **Landscape layout** for the workout screen

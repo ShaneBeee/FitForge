@@ -46,6 +46,8 @@ final class WorkoutEngine: Identifiable {
     private(set) var calorieEstimate: CalorieEstimate?
     /// How hard it felt (1–10), if rated on the summary screen.
     private(set) var effort: Int?
+    /// Weights changed during the workout, by exercise position (when you use a different pair).
+    private(set) var weightOverrides: [Int: Double] = [:]
 
     var startedAt: Date { session.startDate }
     var finishedAt: Date? { session.endDate }
@@ -95,6 +97,32 @@ final class WorkoutEngine: Identifiable {
 
     /// True when the set the user is about to do is the first of a new exercise.
     var isStartOfExercise: Bool { setIndex == 0 }
+
+    // MARK: - Weight
+
+    /// The weight for the current exercise (lb), if it uses one.
+    var currentWeight: Double? { weight(at: exerciseIndex) }
+
+    private func weight(at index: Int) -> Double? {
+        weightOverrides[index] ?? (plan.exercises.indices.contains(index) ? plan.exercises[index].weightLbs : nil)
+    }
+
+    /// Every weight the user owns that suits the current exercise, lightest first.
+    var weightOptions: [Double] {
+        guard let current, current.weightLbs != nil,
+              let kind = current.exercise.equipment.first(where: \.hasWeight)
+        else { return [] }
+        let all = profile.availableWeights(for: kind)
+        guard let range = current.exercise.weightRange else { return all }
+        let suitable = all.filter { range.contains($0) }
+        return suitable.isEmpty ? all : suitable
+    }
+
+    /// Use a different weight for the rest of the current exercise.
+    func setWeight(_ weight: Double) {
+        weightOverrides[exerciseIndex] = weight
+        refreshLiveActivity()
+    }
 
     /// Time left in the current timed phase.
     func remaining(at date: Date) -> TimeInterval? {
@@ -460,7 +488,8 @@ final class WorkoutEngine: Identifiable {
                          setsDone: done, totalSets: total)
 
         case .resting:
-            let next = current.map { "Up next: \($0.exercise.name) · set \(setIndex + 1) of \($0.sets)" } ?? "Rest"
+            let weight = currentWeight.map { " · \(EquipmentItem.format($0)) lb" } ?? ""
+            let next = current.map { "Up next: \($0.exercise.name) · set \(setIndex + 1) of \($0.sets)\(weight)" } ?? "Rest"
             return .init(phase: isPaused ? .paused : .resting, title: "Rest", detail: next,
                          timerStart: timerStart, timerEnd: phaseEndsAt, pausedRemaining: frozen,
                          setsDone: done, totalSets: total)
@@ -481,11 +510,12 @@ final class WorkoutEngine: Identifiable {
         }
     }
 
-    /// e.g. "8–12 reps" or "30 sec per side"
+    /// e.g. "8–12 reps · 15 lb" or "30 sec per side"
     private func shortTarget(_ planned: PlannedExercise) -> String {
         let perSide = planned.exercise.isUnilateral ? " per side" : ""
-        if let seconds = planned.seconds { return "\(seconds) sec\(perSide)" }
-        if let reps = planned.reps { return "\(reps.lowerBound)–\(reps.upperBound) reps\(perSide)" }
+        let weight = currentWeight.map { " · \(EquipmentItem.format($0)) lb" } ?? ""
+        if let seconds = planned.seconds { return "\(seconds) sec\(perSide)\(weight)" }
+        if let reps = planned.reps { return "\(reps.lowerBound)–\(reps.upperBound) reps\(perSide)\(weight)" }
         return ""
     }
 
@@ -594,7 +624,9 @@ final class WorkoutEngine: Identifiable {
     }
 
     private func makeLog(for planned: PlannedExercise) -> SetLog {
-        SetLog(planned: planned, exerciseIndex: exerciseIndex, setNumber: setIndex + 1)
+        let log = SetLog(planned: planned, exerciseIndex: exerciseIndex, setNumber: setIndex + 1)
+        log.weightLbs = currentWeight
+        return log
     }
 
     private func record(_ log: SetLog) {
@@ -609,10 +641,17 @@ final class WorkoutEngine: Identifiable {
         if let seconds = planned.seconds {
             return "\(planned.sets) sets of \(seconds) seconds\(perSide)"
         }
-        if let reps = planned.reps {
-            return "\(planned.sets) sets of \(reps.lowerBound) to \(reps.upperBound) reps\(perSide)"
+        let weight: String
+        if let pounds = planned.weightLbs {
+            let amount = pounds.formatted(.number.precision(.fractionLength(0...1)))
+            weight = planned.isWeightIncrease ? ", and try \(amount) pounds this time" : ", with \(amount) pounds"
+        } else {
+            weight = ""
         }
-        return "\(planned.sets) sets"
+        if let reps = planned.reps {
+            return "\(planned.sets) sets of \(reps.lowerBound) to \(reps.upperBound) reps\(perSide)\(weight)"
+        }
+        return "\(planned.sets) sets\(weight)"
     }
 
     // MARK: - Feedback

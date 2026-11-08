@@ -14,7 +14,7 @@ struct WorkoutView: View {
     @State private var activeWorkout: WorkoutEngine?
     @Query private var sessions: [WorkoutSession]
 
-    private var week: [PlannedWorkout] { WorkoutBuilder.buildWeek(for: profile) }
+    private var week: [PlannedWorkout] { WorkoutBuilder.buildWeek(for: profile, history: sessions) }
     private var schedule: [ScheduledWorkout] { WeekSchedule.week(containing: .now, profile: profile, sessions: sessions) }
     private var todaySlot: ScheduledWorkout? { schedule.first { Calendar.current.isDateInToday($0.date) } }
     private var makeUp: ScheduledWorkout? { schedule.first { $0.status == .missed } }
@@ -205,9 +205,14 @@ struct ExerciseRow: View {
                             .background(Theme.green.opacity(0.15), in: Capsule())
                     }
                 }
-                Text(planned.prescription)
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    Text(planned.prescription)
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    if let weight = planned.weightText {
+                        WeightTag(weight: weight, isIncrease: planned.isWeightIncrease)
+                    }
+                }
                 Text(planned.exercise.muscles.map(\.title).joined(separator: " · "))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Theme.blue)
@@ -236,5 +241,21 @@ struct ExerciseRow: View {
             .padding(.vertical, 4)
             .background(.background, in: Capsule())
             .foregroundStyle(.secondary)
+    }
+}
+
+/// "Use 15 lb", or "Try 20 lb" with an up arrow when it's a step up from last time.
+struct WeightTag: View {
+    let weight: String
+    let isIncrease: Bool
+
+    var body: some View {
+        Label(isIncrease ? "Try \(weight)" : "Use \(weight)",
+              systemImage: isIncrease ? "arrow.up.circle.fill" : "scalemass.fill")
+            .font(.caption.weight(.bold).monospacedDigit())
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .foregroundStyle(isIncrease ? Theme.green : Theme.blue)
+            .background((isIncrease ? Theme.green : Theme.blue).opacity(0.15), in: Capsule())
     }
 }

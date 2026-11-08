@@ -165,8 +165,17 @@ struct PlannedExercise: Identifiable, Hashable {
     let restSeconds: Int
     /// True when this exercise is here because of one of the user's focus areas.
     var isFocus = false
+    /// Suggested weight in lb (per dumbbell, or the kettlebell) for weighted exercises.
+    var weightLbs: Double? = nil
+    /// True when the suggested weight is a step up from last time.
+    var isWeightIncrease = false
 
     var id: String { exercise.id }
+
+    /// e.g. "15 lb"
+    var weightText: String? {
+        weightLbs.map { "\(EquipmentItem.format($0)) lb" }
+    }
 
     /// e.g. "3 × 8–12" or "3 × 30 sec", with "per side" for one-sided exercises.
     var prescription: String {
@@ -229,8 +238,11 @@ enum WorkoutBuilder {
     }
 
     /// Builds every day at once, so exercises vary across the week and never repeat within a day.
-    static func buildWeek(for profile: UserProfile) -> [PlannedWorkout] {
+    ///
+    /// `history` (past workouts) lets it suggest the weight used last time, or a step up.
+    static func buildWeek(for profile: UserProfile, history: [WorkoutSession] = []) -> [PlannedWorkout] {
         var weekUsed: Set<String> = []
+        let lastUses = WeightProgression.lastUses(in: history)
 
         return WorkoutPlans.days(for: profile).enumerated().map { dayIndex, day in
             var dayUsed: Set<String> = []
@@ -243,12 +255,16 @@ enum WorkoutBuilder {
                 guard let exercise else { continue }
                 dayUsed.insert(exercise.id)
                 weekUsed.insert(exercise.id)
-                exercises.append(prescribe(
+                var planned = prescribe(
                     exercise,
                     for: profile,
                     isMainLift: index < 2,
                     isFocus: plan.focus.contains(exercise.pattern)
-                ))
+                )
+                let weight = WeightProgression.suggestedWeight(for: exercise, profile: profile, lastUse: lastUses[exercise.id])
+                planned.weightLbs = weight?.weight
+                planned.isWeightIncrease = weight?.isIncrease ?? false
+                exercises.append(planned)
             }
             return PlannedWorkout(day: day, exercises: exercises)
         }
@@ -296,8 +312,8 @@ enum WorkoutBuilder {
         return (slots, Set(focusPatterns))
     }
 
-    static func build(_ day: WorkoutDay, for profile: UserProfile) -> PlannedWorkout {
-        buildWeek(for: profile).first { $0.day == day } ?? PlannedWorkout(day: day, exercises: [])
+    static func build(_ day: WorkoutDay, for profile: UserProfile, history: [WorkoutSession] = []) -> PlannedWorkout {
+        buildWeek(for: profile, history: history).first { $0.day == day } ?? PlannedWorkout(day: day, exercises: [])
     }
 
     /// What to use when nothing fits a slot (e.g. no carry without dumbbells).
@@ -379,14 +395,10 @@ enum WorkoutBuilder {
         guard exercise.cautions.isDisjoint(with: profile.jointCautions) else { return false }
 
         if let range = exercise.weightRange {
-            let weightedKinds = exercise.equipment.filter(\.hasWeight)
-            for kind in weightedKinds {
-                let weights = items.filter { $0.kind == kind }.map(\.weightLbs)
-                // Unknown weight counts as a fit; otherwise at least one must be in range.
-                let fits = weights.contains { weight in
-                    guard let weight else { return true }
-                    return range.contains(weight)
-                }
+            for kind in exercise.equipment where kind.hasWeight {
+                // Unknown weight counts as a fit; otherwise at least one weight must be in range.
+                let fits = profile.hasUnknownWeight(for: kind)
+                    || profile.availableWeights(for: kind).contains { range.contains($0) }
                 if !fits { return false }
             }
         }
