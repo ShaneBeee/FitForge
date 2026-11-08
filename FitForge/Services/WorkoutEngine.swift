@@ -247,7 +247,14 @@ final class WorkoutEngine: Identifiable {
     }
 
     func setRepsForLastSet(_ reps: Int) {
-        lastRepsLog?.actualReps = max(0, reps)
+        guard let lastRepsLog else { return }
+        setReps(reps, for: lastRepsLog)
+    }
+
+    /// Corrects the reps for any finished set (e.g. from the summary screen).
+    func setReps(_ reps: Int, for log: SetLog) {
+        guard !log.wasSkipped, log.actualReps != nil else { return }
+        log.actualReps = min(max(0, reps), 999)
         try? context.save()
     }
 
