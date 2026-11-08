@@ -33,6 +33,16 @@ final class WorkoutLiveActivity {
         }
     }
 
+    /// Removes every FitForge Live Activity from the lock screen right away — used when the
+    /// workout summary is closed, and at launch to clear any left behind by an interrupted workout.
+    static func dismissAll() {
+        Task {
+            for activity in Activity<WorkoutActivityAttributes>.activities {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+        }
+    }
+
     /// Marks the content as stale the moment a countdown ends, so iOS redraws the
     /// lock screen ("Rest's up") even while FitForge is asleep.
     private static func content(for state: WorkoutActivityAttributes.ContentState) -> ActivityContent<WorkoutActivityAttributes.ContentState> {

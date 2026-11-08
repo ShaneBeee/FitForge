@@ -7,6 +7,11 @@ struct FitForgeApp: App {
     /// Created at launch so it's ready to catch the Watch's mirrored workout session.
     @State private var watch = WatchWorkoutLink()
 
+    init() {
+        // No workout is running at launch, so clear any lock screen card left by an interrupted one.
+        WorkoutLiveActivity.dismissAll()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()

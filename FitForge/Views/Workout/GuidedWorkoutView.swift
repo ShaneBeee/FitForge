@@ -58,6 +58,8 @@ struct GuidedWorkoutView: View {
             UIApplication.shared.isIdleTimerDisabled = false
             engine.stopTimers()
             engine.commitEffort()
+            // The workout screen is closed, so take the card off the lock screen too.
+            WorkoutLiveActivity.dismissAll()
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active { engine.reconcile() }
