@@ -3,7 +3,7 @@ import Foundation
 enum CalorieMethod: String, Codable {
     /// Measured live by an Apple Watch workout session (most accurate).
     case watch
-    /// From heart rate recorded during the workout (e.g. by an Apple Watch).
+    /// Heart rate recorded during the workout (e.g. by an Apple Watch), blended with the activity estimate.
     case heartRate
     /// From the exercises, sets and work/rest time (no heart rate available).
     case activity
@@ -11,7 +11,7 @@ enum CalorieMethod: String, Codable {
     var description: String {
         switch self {
         case .watch: "Measured by your Apple Watch"
-        case .heartRate: "Estimated from your heart rate"
+        case .heartRate: "Estimated from your heart rate and the work you did"
         case .activity: "Estimated from your exercises and sets"
         }
     }
@@ -25,7 +25,12 @@ struct CalorieEstimate {
 }
 
 /// Estimates active calories for a finished workout.
-/// Uses heart rate when there's enough of it; otherwise falls back to MET values for the work done.
+///
+/// Always works out an activity estimate (MET values for the work done). When there's enough
+/// heart rate data, it's averaged with a heart-rate estimate: heart-rate formulas are built for
+/// steady cardio and run high for strength training, where holds and heavy sets raise your
+/// heart rate more than they raise calorie burn, so blending keeps the personal touch without
+/// overshooting.
 enum CalorieEstimator {
 
     static func estimate(
@@ -44,20 +49,7 @@ enum CalorieEstimator {
         let kg = weightLbs * 0.453592
         let restingPerMinute = basalCalories(kg: kg, heightInches: heightInches, age: age, ranges: ranges) / 1440
 
-        // 1. Heart rate (Keytel et al. 2005), when there's enough data to trust it.
-        if heartRates.count >= 3, let age, let ranges {
-            let averageHR = heartRates.reduce(0, +) / Double(heartRates.count)
-            if averageHR >= 80 {
-                let grossPerMinute: Double = switch ranges {
-                case .male: (-55.0969 + 0.6309 * averageHR + 0.1988 * kg + 0.2017 * Double(age)) / 4.184
-                case .female: (-20.4022 + 0.4472 * averageHR - 0.1263 * kg + 0.074 * Double(age)) / 4.184
-                }
-                let active = max(0, grossPerMinute - restingPerMinute) * minutes
-                return CalorieEstimate(activeCalories: active.rounded(), method: .heartRate, averageHeartRate: averageHR.rounded())
-            }
-        }
-
-        // 2. Activity (METs): intensity of each set's work time, plus light activity while resting.
+        // 1. Activity (METs): intensity of each set's work time, plus light activity while resting.
         let totalSeconds = end.timeIntervalSince(start)
         var workSeconds = 0.0
         var metSeconds = 0.0
@@ -80,8 +72,24 @@ enum CalorieEstimator {
         metSeconds += restSeconds * 1.8   // standing, walking around, catching your breath
 
         let averageMET = metSeconds / totalSeconds
-        let active = max(0, averageMET - 1) * kg * (totalSeconds / 3600)
-        return CalorieEstimate(activeCalories: active.rounded(), method: .activity, averageHeartRate: nil)
+        let activityActive = max(0, averageMET - 1) * kg * (totalSeconds / 3600)
+
+        // 2. Heart rate (Keytel et al. 2005), when there's enough data to trust it,
+        //    averaged with the activity estimate.
+        if heartRates.count >= 3, let age, let ranges {
+            let averageHR = heartRates.reduce(0, +) / Double(heartRates.count)
+            if averageHR >= 80 {
+                let grossPerMinute: Double = switch ranges {
+                case .male: (-55.0969 + 0.6309 * averageHR + 0.1988 * kg + 0.2017 * Double(age)) / 4.184
+                case .female: (-20.4022 + 0.4472 * averageHR - 0.1263 * kg + 0.074 * Double(age)) / 4.184
+                }
+                let heartRateActive = max(0, grossPerMinute - restingPerMinute) * minutes
+                let blended = (heartRateActive + activityActive) / 2
+                return CalorieEstimate(activeCalories: blended.rounded(), method: .heartRate, averageHeartRate: averageHR.rounded())
+            }
+        }
+
+        return CalorieEstimate(activeCalories: activityActive.rounded(), method: .activity, averageHeartRate: nil)
     }
 
     /// Typical MET values while working, by movement type.
