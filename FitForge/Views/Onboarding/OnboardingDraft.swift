@@ -47,6 +47,8 @@ final class OnboardingDraft {
     var adjustableKinds: Set<EquipmentKind> = []
     var adjustableMin: [EquipmentKind: Double] = [:]
     var adjustableMax: [EquipmentKind: Double] = [:]
+    /// Owned, but not used in workouts yet.
+    var notInUse: Set<EquipmentKind> = []
 
     // Ability
     var abilityTiers: [AbilityQuestion: Int] = [:]
@@ -88,6 +90,7 @@ final class OnboardingDraft {
 
         for item in profile.equipment ?? [] {
             selectedEquipment.insert(item.kind)
+            if !item.isInUse { notInUse.insert(item.kind) }
             if item.isAdjustable {
                 adjustableKinds.insert(item.kind)
                 adjustableMin[item.kind] = item.weightLbs
@@ -181,6 +184,15 @@ final class OnboardingDraft {
         fixedWeights[kind] = weights
     }
 
+    /// Switches owned equipment in or out of workouts.
+    func setInUse(_ inUse: Bool, for kind: EquipmentKind) {
+        if inUse {
+            notInUse.remove(kind)
+        } else {
+            notInUse.insert(kind)
+        }
+    }
+
     func setAdjustable(_ isAdjustable: Bool, for kind: EquipmentKind) {
         if isAdjustable {
             adjustableKinds.insert(kind)
@@ -207,6 +219,9 @@ final class OnboardingDraft {
                 // Owned, but the weight wasn't given — treated as "fits anything".
                 items.append(EquipmentItem(kind: kind))
             }
+        }
+        for item in items where notInUse.contains(item.kind) {
+            item.isInUse = false
         }
         return items
     }

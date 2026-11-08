@@ -9,7 +9,7 @@ enum ExerciseLibrary {
     }
 
     static let all: [Exercise] = squat + lunge + hinge + push + pull + core + carry
-        + shoulders + biceps + triceps + calves + conditioning
+        + shoulders + biceps + triceps + calves + conditioning + equipmentExtras
 
     // MARK: - Squat
 
@@ -482,6 +482,178 @@ enum ExerciseLibrary {
             summary: "Squat, plank, back up and jump. The all-in-one conditioner.",
             cues: ["Squat and place your hands down", "Jump or step your feet back to a plank", "Return and jump up"],
             pattern: .conditioning, difficulty: .advanced, measure: .time, cautions: [.knees, .wrists], muscleOverride: [.quads, .chest, .abs]
+        ),
+    ]
+
+    // MARK: - Extra equipment
+
+    /// Exercises for the pull-up bar and the extra equipment types. Listed last, so when
+    /// they tie with a core exercise the familiar one is picked first.
+    static let equipmentExtras: [Exercise] = [
+        // Pull-up bar
+        Exercise(
+            id: "dead-hang", name: "Dead Hang",
+            summary: "Simply hang from the bar. Builds grip and shoulder strength, and the first step toward pull-ups.",
+            cues: ["Overhand grip, hands shoulder-width", "Let your body hang long and relaxed", "Breathe slowly and hold on"],
+            pattern: .pull, difficulty: .beginner, measure: .time, equipment: [.pullUpBar],
+            muscleOverride: [.grip, .upperBack, .shoulders]
+        ),
+        Exercise(
+            id: "scapular-pull-up", name: "Scapular Pull-Up",
+            summary: "From a hang, pull your shoulder blades down without bending your arms. Teaches the start of every pull-up.",
+            cues: ["Start from a dead hang", "Pull your shoulders down away from your ears", "Arms stay straight — it's a small movement"],
+            pattern: .pull, difficulty: .beginner, equipment: [.pullUpBar], muscleOverride: [.upperBack, .grip]
+        ),
+        Exercise(
+            id: "band-assisted-pull-up", name: "Band-Assisted Pull-Up",
+            summary: "A full pull-up with a band under your foot or knee taking some of your weight.",
+            cues: ["Loop the band over the bar, foot or knee in the bottom", "Pull your chest toward the bar", "Lower slowly to a full hang"],
+            pattern: .pull, difficulty: .intermediate, equipment: [.pullUpBar, .band]
+        ),
+        Exercise(
+            id: "chin-up", name: "Chin-Up",
+            summary: "A pull-up with palms facing you. A little easier than a pull-up, with more biceps.",
+            cues: ["Palms facing you, shoulder-width", "Pull until your chin clears the bar", "Lower all the way down with control"],
+            pattern: .pull, difficulty: .advanced, equipment: [.pullUpBar], muscleOverride: [.upperBack, .biceps, .grip]
+        ),
+        Exercise(
+            id: "hanging-knee-raise", name: "Hanging Knee Raise",
+            summary: "Hang from the bar and lift your knees toward your chest. A great lower-abs exercise.",
+            cues: ["Hang with shoulders active, not shrugged", "Curl your knees up toward your chest", "Lower slowly — no swinging"],
+            pattern: .core, difficulty: .intermediate, equipment: [.pullUpBar], muscleOverride: [.abs, .grip]
+        ),
+        Exercise(
+            id: "hanging-leg-raise", name: "Hanging Leg Raise",
+            summary: "Like the knee raise, but with straight legs. One of the toughest ab exercises.",
+            cues: ["Hang still before each rep", "Lift straight legs to hip height or higher", "Lower under control"],
+            pattern: .core, difficulty: .advanced, equipment: [.pullUpBar], muscleOverride: [.abs, .grip]
+        ),
+
+        // Step or box
+        Exercise(
+            id: "box-step-up", name: "Step-Up",
+            summary: "Step up onto a step or box, one leg at a time. Simple and great for the legs and glutes.",
+            cues: ["Whole foot on the step", "Push through the top leg, not the bottom one", "Step down slowly"],
+            pattern: .lunge, difficulty: .beginner, equipment: [.step], isUnilateral: true
+        ),
+        Exercise(
+            id: "decline-push-up", name: "Decline Push-Up",
+            summary: "A push-up with your feet up on a step. Shifts the work toward your upper chest and shoulders.",
+            cues: ["Feet on the step, hands on the floor", "Body in one straight line", "Lower your chest between your hands"],
+            pattern: .push, difficulty: .advanced, equipment: [.step], cautions: [.wrists]
+        ),
+        Exercise(
+            id: "deficit-calf-raise", name: "Step Calf Raise",
+            summary: "Calf raises with your heels hanging off a step, for a bigger stretch and more range.",
+            cues: ["Balls of your feet on the edge", "Let your heels sink below the step", "Rise up high and pause"],
+            pattern: .calves, difficulty: .intermediate, equipment: [.step]
+        ),
+
+        // Push-up handles
+        Exercise(
+            id: "handle-push-up", name: "Push-Up on Handles",
+            summary: "Push-ups gripping handles. Your wrists stay straight, and you can go a little deeper.",
+            cues: ["Grip the handles under your shoulders", "Lower until your chest is between your hands", "Press back up, body in one line"],
+            pattern: .push, difficulty: .intermediate, equipment: [.pushUpHandles]
+        ),
+        Exercise(
+            id: "tuck-l-sit", name: "Tuck L-Sit Hold",
+            summary: "Press up on the handles and hold your knees tucked off the floor. Tough on the core and triceps.",
+            cues: ["Hands on the handles beside your hips", "Press down and lift your hips", "Tuck your knees and hold"],
+            pattern: .core, difficulty: .advanced, measure: .time, equipment: [.pushUpHandles],
+            muscleOverride: [.abs, .triceps, .shoulders]
+        ),
+
+        // Suspension trainer
+        Exercise(
+            id: "suspension-row", name: "Suspension Row",
+            summary: "Lean back holding the straps and pull yourself up. Walk your feet forward to make it harder.",
+            cues: ["Body straight like a plank", "Pull your chest to your hands", "Squeeze your shoulder blades together"],
+            pattern: .pull, difficulty: .beginner, equipment: [.suspensionTrainer]
+        ),
+        Exercise(
+            id: "suspension-squat", name: "Suspension Squat",
+            summary: "Hold the straps for balance while you squat deeper than you could on your own.",
+            cues: ["Hold the straps with light arms", "Sit back and down", "Use the straps only as much as you need"],
+            pattern: .squat, difficulty: .beginner, equipment: [.suspensionTrainer]
+        ),
+        Exercise(
+            id: "suspension-curl", name: "Suspension Biceps Curl",
+            summary: "Lean back with palms up and curl yourself toward your hands.",
+            cues: ["Palms up, elbows pointing forward", "Curl your hands toward your forehead", "Lower slowly"],
+            pattern: .biceps, difficulty: .intermediate, equipment: [.suspensionTrainer]
+        ),
+        Exercise(
+            id: "suspension-push-up", name: "Suspension Push-Up",
+            summary: "Push-ups with your hands in the straps. The wobble makes your chest and core work much harder.",
+            cues: ["Hands in the straps under your shoulders", "Keep the straps from flaring out", "Body in one straight line"],
+            pattern: .push, difficulty: .advanced, equipment: [.suspensionTrainer], cautions: [.shoulders]
+        ),
+
+        // Ab wheel
+        Exercise(
+            id: "kneeling-ab-rollout", name: "Kneeling Ab Wheel Rollout",
+            summary: "Roll the wheel out from your knees and pull it back. One of the best core exercises there is.",
+            cues: ["Start on your knees, wheel under your shoulders", "Roll out only as far as you can keep your back flat", "Pull back with your abs"],
+            pattern: .core, difficulty: .intermediate, equipment: [.abWheel], cautions: [.lowerBack]
+        ),
+
+        // Stability ball
+        Exercise(
+            id: "ball-crunch", name: "Stability Ball Crunch",
+            summary: "Crunches on the ball, for a bigger range than on the floor.",
+            cues: ["Ball under your lower back, feet wide", "Curl up, ribs toward hips", "Lower back over the ball"],
+            pattern: .core, difficulty: .beginner, equipment: [.stabilityBall]
+        ),
+        Exercise(
+            id: "ball-hamstring-curl", name: "Stability Ball Hamstring Curl",
+            summary: "Lying on your back with heels on the ball, lift your hips and roll the ball in.",
+            cues: ["Heels on the ball, hips up", "Curl the ball toward you", "Roll it out slowly, hips stay up"],
+            pattern: .hinge, difficulty: .intermediate, equipment: [.stabilityBall], muscleOverride: [.hamstrings, .glutes]
+        ),
+        Exercise(
+            id: "stir-the-pot", name: "Stir the Pot",
+            summary: "A plank with your forearms on the ball, drawing small circles. Brutal for the core.",
+            cues: ["Forearms on the ball, body in a plank", "Draw small circles with your elbows", "Don't let your hips sag"],
+            pattern: .core, difficulty: .advanced, measure: .time, equipment: [.stabilityBall], cautions: [.shoulders]
+        ),
+
+        // Mini bands
+        Exercise(
+            id: "banded-glute-bridge", name: "Banded Glute Bridge",
+            summary: "A glute bridge with a band above your knees. Push your knees out against it all the way up.",
+            cues: ["Band just above your knees", "Press your knees out against the band", "Squeeze your glutes at the top"],
+            pattern: .hinge, difficulty: .beginner, equipment: [.miniBands], muscleOverride: [.glutes, .hamstrings]
+        ),
+        Exercise(
+            id: "lateral-band-walk", name: "Lateral Band Walk",
+            summary: "Step sideways with a band around your legs. Wakes up the side of your glutes.",
+            cues: ["Band above the knees or at the ankles", "Stay in a half squat", "Step wide and slow, keep tension on the band"],
+            pattern: .lunge, difficulty: .beginner, equipment: [.miniBands], isUnilateral: true, muscleOverride: [.glutes]
+        ),
+
+        // Medicine or slam ball
+        Exercise(
+            id: "med-ball-russian-twist", name: "Medicine Ball Russian Twist",
+            summary: "Sit leaning back and rotate the ball from side to side.",
+            cues: ["Lean back with a long, flat back", "Turn your shoulders, not just your arms", "Feet down to make it easier"],
+            pattern: .core, difficulty: .intermediate, equipment: [.medicineBall], cautions: [.lowerBack]
+        ),
+        Exercise(
+            id: "ball-slam", name: "Ball Slam",
+            summary: "Lift the ball overhead and slam it down as hard as you can. A great way to burn energy fast.",
+            cues: ["Reach the ball high overhead", "Slam it down in front of your feet", "Squat to pick it up, and go again"],
+            pattern: .conditioning, difficulty: .intermediate, measure: .time, equipment: [.medicineBall],
+            muscleOverride: [.abs, .shoulders, .upperBack]
+        ),
+
+        // Jump rope
+        Exercise(
+            id: "jump-rope", name: "Jump Rope",
+            summary: "Skipping rope. Quick, light bounces on the balls of your feet.",
+            cues: ["Small jumps, just clear the rope", "Turn the rope with your wrists", "Land softly"],
+            pattern: .conditioning, difficulty: .intermediate, measure: .time, equipment: [.jumpRope],
+            cautions: [.knees], muscleOverride: [.calves, .quads]
         ),
     ]
 }

@@ -285,46 +285,111 @@ enum AbilityQuestion: String, CaseIterable, Identifiable, Codable {
     }
 }
 
-enum EquipmentKind: String, CaseIterable, Identifiable, Codable {
-    case dumbbells
-    case chair
-    case bench
-    case pullUpBar
-    case band
-    case kettlebell
+/// How the equipment list is grouped on screen.
+enum EquipmentCategory: String, CaseIterable, Identifiable {
+    case weights, bodyweight, bands, cardio
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
+        case .weights: "Weights"
+        case .bodyweight: "Bodyweight helpers"
+        case .bands: "Bands"
+        case .cardio: "Cardio"
+        }
+    }
+
+    var kinds: [EquipmentKind] {
+        EquipmentKind.allCases.filter { $0.category == self }
+    }
+}
+
+enum EquipmentKind: String, CaseIterable, Identifiable, Codable {
+    // Weights
+    case dumbbells
+    case kettlebell
+    case medicineBall
+    // Bodyweight helpers
+    case chair
+    case bench
+    case step
+    case pullUpBar
+    case pushUpHandles
+    case suspensionTrainer
+    case abWheel
+    case stabilityBall
+    // Bands
+    case band
+    case miniBands
+    // Cardio
+    case jumpRope
+
+    var id: String { rawValue }
+
+    var category: EquipmentCategory {
+        switch self {
+        case .dumbbells, .kettlebell, .medicineBall: .weights
+        case .chair, .bench, .step, .pullUpBar, .pushUpHandles, .suspensionTrainer, .abWheel, .stabilityBall: .bodyweight
+        case .band, .miniBands: .bands
+        case .jumpRope: .cardio
+        }
+    }
+
+    var title: String {
+        switch self {
         case .dumbbells: "Dumbbells"
+        case .kettlebell: "Kettlebell"
+        case .medicineBall: "Medicine or slam ball"
         case .chair: "Sturdy chair"
         case .bench: "Bench"
+        case .step: "Step or box"
         case .pullUpBar: "Pull-up bar"
+        case .pushUpHandles: "Push-up handles"
+        case .suspensionTrainer: "Suspension trainer"
+        case .abWheel: "Ab wheel"
+        case .stabilityBall: "Stability ball"
         case .band: "Resistance band"
-        case .kettlebell: "Kettlebell"
+        case .miniBands: "Mini loop bands"
+        case .jumpRope: "Jump rope"
         }
     }
 
     var detail: String {
         switch self {
         case .dumbbells: "A pair of fixed or adjustable dumbbells"
+        case .kettlebell: "Any single kettlebell"
+        case .medicineBall: "A weighted ball for throws, slams and twists"
         case .chair: "Something solid to step on or lean on"
         case .bench: "A workout or weight bench"
+        case .step: "An aerobic step, plyo box or the bottom stair"
         case .pullUpBar: "A doorway or mounted bar"
-        case .band: "Loop or tube resistance bands"
-        case .kettlebell: "Any single kettlebell"
+        case .pushUpHandles: "Handles or parallettes — easier on the wrists"
+        case .suspensionTrainer: "TRX-style straps over a door or anchor"
+        case .abWheel: "A wheel with handles for rollouts"
+        case .stabilityBall: "A large inflatable exercise ball"
+        case .band: "Long loop or tube resistance bands"
+        case .miniBands: "Small fabric or rubber loops for hips and glutes"
+        case .jumpRope: "Any skipping rope"
         }
     }
 
     var systemImage: String {
         switch self {
         case .dumbbells: "dumbbell.fill"
+        case .kettlebell: "scalemass.fill"
+        case .medicineBall: "basketball.fill"
         case .chair: "chair.fill"
         case .bench: "bed.double.fill"
+        case .step: "figure.step.training"
         case .pullUpBar: "figure.climbing"
+        case .pushUpHandles: "figure.strengthtraining.functional"
+        case .suspensionTrainer: "figure.flexibility"
+        case .abWheel: "circle.circle"
+        case .stabilityBall: "circle.fill"
         case .band: "arrow.left.and.right"
-        case .kettlebell: "scalemass.fill"
+        case .miniBands: "circle.dashed"
+        case .jumpRope: "figure.jumprope"
         }
     }
 

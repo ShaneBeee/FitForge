@@ -18,21 +18,32 @@ struct EquipmentStep: View {
                 systemImage: "dumbbell.fill"
             )
 
-            ForEach(EquipmentKind.allCases) { kind in
-                VStack(spacing: 8) {
-                    OptionCard(
-                        title: kind.title,
-                        detail: kind.detail,
-                        systemImage: kind.systemImage,
-                        isSelected: draft.selectedEquipment.contains(kind)
-                    ) {
-                        draft.toggleEquipment(kind)
-                    }
+            ForEach(EquipmentCategory.allCases) { category in
+                Text(category.title)
+                    .font(.title3.weight(.bold))
+                    .padding(.top, 8)
 
-                    if kind.hasWeight && draft.selectedEquipment.contains(kind) {
-                        weightsCard(for: kind)
+                ForEach(category.kinds) { kind in
+                    VStack(spacing: 8) {
+                        OptionCard(
+                            title: kind.title,
+                            detail: kind.detail,
+                            systemImage: kind.systemImage,
+                            isSelected: draft.selectedEquipment.contains(kind)
+                        ) {
+                            draft.toggleEquipment(kind)
+                        }
+
+                        if draft.selectedEquipment.contains(kind) {
+                            VStack(spacing: 8) {
+                                inUseCard(for: kind)
+                                if kind.hasWeight {
+                                    weightsCard(for: kind)
+                                }
+                            }
                             .padding(.leading, 24)
                             .transition(.move(edge: .top).combined(with: .opacity))
+                        }
                     }
                 }
             }
@@ -44,7 +55,30 @@ struct EquipmentStep: View {
         }
         .animation(.snappy, value: draft.selectedEquipment)
         .animation(.snappy, value: draft.adjustableKinds)
+        .animation(.snappy, value: draft.notInUse)
         .animation(.snappy, value: showingHeavier)
+    }
+
+    // MARK: - In use
+
+    private func inUseCard(for kind: EquipmentKind) -> some View {
+        FormCard {
+            Toggle(isOn: Binding(
+                get: { !draft.notInUse.contains(kind) },
+                set: { draft.setInUse($0, for: kind) }
+            )) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Use in workouts")
+                        .font(.subheadline.weight(.semibold))
+                    Text(draft.notInUse.contains(kind)
+                         ? "Saved as owned, but left out of workouts for now."
+                         : "Workouts include exercises for it.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .tint(Theme.green)
+        }
     }
 
     // MARK: - Weights

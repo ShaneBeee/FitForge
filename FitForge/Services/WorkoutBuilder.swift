@@ -398,8 +398,8 @@ enum WorkoutBuilder {
 
     /// Whether the user has the equipment (at a suitable weight) and no joint conflicts.
     static func isAvailable(_ exercise: Exercise, for profile: UserProfile) -> Bool {
-        let items = profile.equipment ?? []
-        let owned = Set(items.map(\.kind))
+        // Only equipment switched on for workouts (owned-but-not-yet items are left out).
+        let owned = Set(profile.equipmentInUse.map(\.kind))
         guard exercise.equipment.isSubset(of: owned) else { return false }
         guard exercise.cautions.isDisjoint(with: profile.jointCautions) else { return false }
 

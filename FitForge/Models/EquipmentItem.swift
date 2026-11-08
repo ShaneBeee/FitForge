@@ -16,6 +16,8 @@ final class EquipmentItem {
     /// Adjustable dumbbells/kettlebell: every weight from `weightLbs` to `maxWeightLbs` is available.
     var isAdjustable: Bool = false
     var maxWeightLbs: Double? = nil
+    /// Owned but switched off: kept on the list, left out of workouts until turned on.
+    var isInUse: Bool = true
 
     var profile: UserProfile?
 
@@ -46,14 +48,15 @@ final class EquipmentItem {
         return weights
     }
 
-    /// e.g. "Dumbbells · 25 lb pair", "Adjustable dumbbells · 5–50 lb" or "Sturdy chair"
+    /// e.g. "Dumbbells · 25 lb pair", "Adjustable dumbbells · 5–50 lb" or "Pull-up bar · not in use yet"
     var displayName: String {
-        guard kind.hasWeight, let weightLbs else { return kind.title }
+        let suffix = isInUse ? "" : " · not in use yet"
+        guard kind.hasWeight, let weightLbs else { return kind.title + suffix }
         let low = Self.format(weightLbs)
         if isAdjustable, let maxWeightLbs {
-            return "Adjustable \(kind.title.lowercased()) · \(low)–\(Self.format(maxWeightLbs)) lb"
+            return "Adjustable \(kind.title.lowercased()) · \(low)–\(Self.format(maxWeightLbs)) lb" + suffix
         }
-        return "\(kind.title) · \(low) lb\(isPair && kind == .dumbbells ? " pair" : "")"
+        return "\(kind.title) · \(low) lb\(isPair && kind == .dumbbells ? " pair" : "")" + suffix
     }
 
     static func format(_ weight: Double) -> String {
@@ -62,14 +65,19 @@ final class EquipmentItem {
 }
 
 extension UserProfile {
+    /// Equipment switched on for workouts.
+    var equipmentInUse: [EquipmentItem] {
+        (equipment ?? []).filter(\.isInUse)
+    }
+
     /// Every weight available for a kind of equipment, lightest first (e.g. dumbbells: 10, 15, 25).
     func availableWeights(for kind: EquipmentKind) -> [Double] {
-        let all = (equipment ?? []).filter { $0.kind == kind }.flatMap(\.availableWeights)
+        let all = equipmentInUse.filter { $0.kind == kind }.flatMap(\.availableWeights)
         return Array(Set(all)).sorted()
     }
 
     /// True if the user has this kind of equipment but never said what it weighs.
     func hasUnknownWeight(for kind: EquipmentKind) -> Bool {
-        (equipment ?? []).contains { $0.kind == kind && $0.weightLbs == nil }
+        equipmentInUse.contains { $0.kind == kind && $0.weightLbs == nil }
     }
 }
