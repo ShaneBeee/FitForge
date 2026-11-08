@@ -28,6 +28,7 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 - **Multiple weights:** dumbbells and kettlebells can be fixed weights (tap every pair you own, 5–100 lb) or adjustable (enter the lightest and heaviest setting)
 - **Suggested weights:** each weighted exercise shows which pair to use (heaviest for legs and hips, middle for presses and rows, lightest for small muscles), changeable mid-workout; the weight is saved with every set
 - **Progression:** when every set of an exercise reached the top of its rep range, the next workout suggests the next weight up ("Try 20 lb")
+- **Focus area limit by workout length:** 3 focus areas for 20–30 minute workouts, 4 at 45, 5 at 60; if there are ever more than fit, they take turns across the week. The picker notes areas that are already a main lift in every workout (e.g. glutes and legs on the 3-day plan)
 - **Apple Watch app:** starting a workout on the iPhone launches FitForge on the Watch, which runs a real workout session and streams live heart rate and calories to the phone's workout screen. The Watch saves the workout to Apple Health with Apple-measured calories and heart rate (no phone estimate or duplicate workout)
 - **Apple Watch controls:** the current exercise, set and rest countdown on the wrist, with Start set / Done / Skip rest, skip set, skip exercise, pause and ±15s rest, all kept in sync with the iPhone; a wrist tap when rest is up
 - **Landscape layout** for the workout screen

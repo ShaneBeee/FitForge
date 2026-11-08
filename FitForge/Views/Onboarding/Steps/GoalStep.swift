@@ -35,11 +35,11 @@ struct GoalStep: View {
                 Text("Focus areas")
                     .font(.headline)
                 Spacer()
-                Text("\(draft.focusAreas.count) of \(FocusArea.maxSelections)")
+                Text("\(draft.focusAreas.count) of \(draft.maxFocusAreas)")
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
-            Text("Optional. Pick up to 3 areas to prioritize. They get worked earlier and more often, while the rest of your body still gets trained.")
+            Text("Optional. Pick up to \(draft.maxFocusAreas) areas to prioritize. They get worked earlier and more often, while the rest of your body still gets trained. Longer workouts have room for more (4 at 45 min, 5 at 60).")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -48,11 +48,22 @@ struct GoalStep: View {
                     ChipButton(
                         title: area.title,
                         isSelected: draft.focusAreas.contains(area),
-                        isEnabled: draft.focusAreas.count < FocusArea.maxSelections
+                        isEnabled: draft.focusAreas.count < draft.maxFocusAreas
                     ) {
                         draft.toggleFocus(area)
                     }
                 }
+            }
+
+            if let covered = alreadyCoveredNote {
+                Label {
+                    Text(covered)
+                } icon: {
+                    Image(systemName: "checkmark.circle.fill")
+                }
+                .font(.caption)
+                .foregroundStyle(Theme.green)
+                .padding(.top, 4)
             }
 
             if draft.focusAreas.contains(.bellyFat) {
@@ -66,5 +77,23 @@ struct GoalStep: View {
                 .padding(.top, 4)
             }
         }
+    }
+
+    /// e.g. "Glutes and legs are already a main lift in all 3 of your workouts, so there's no need
+    /// to pick them unless you want extra."
+    private var alreadyCoveredNote: String? {
+        let days = draft.rotation
+        guard !days.isEmpty else { return nil }
+        let covered = FocusArea.allCases.filter {
+            !draft.focusAreas.contains($0) && $0.mainLiftDays(in: days) == days.count
+        }
+        guard !covered.isEmpty else { return nil }
+
+        let names = covered.map(\.title)
+        let list = names.count == 1
+            ? names[0]
+            : names.dropLast().joined(separator: ", ") + " and " + names.last!.lowercased()
+        let verb = names.count == 1 ? "is" : "are"
+        return "\(list) \(verb) already a main lift in all \(days.count) of your workouts, so there's no need to pick \(names.count == 1 ? "it" : "them") unless you want extra."
     }
 }

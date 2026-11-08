@@ -275,7 +275,7 @@ enum WorkoutBuilder {
     /// so the plan keeps its balance.
     static func slots(for day: WorkoutDay, dayIndex: Int, profile: UserProfile) -> (slots: [MovementPattern], focus: Set<MovementPattern>) {
         let minutes = profile.workoutMinutes
-        let focusAreas = profile.focusAreas
+        let focusAreas = todaysFocusAreas(profile.focusAreas, dayIndex: dayIndex, minutes: minutes)
 
         // Focus patterns for this day. Areas with two patterns (arms: biceps + triceps)
         // alternate day to day in shorter workouts, and both appear in longer ones.
@@ -310,6 +310,15 @@ enum WorkoutBuilder {
         if wantsFinisher { slots.append(.conditioning) }
 
         return (slots, Set(focusPatterns))
+    }
+
+    /// The focus areas for one day. When there are more than the workout length has room for
+    /// (e.g. 5 picked, then workouts shortened to 30 min), they take turns across the days.
+    private static func todaysFocusAreas(_ areas: [FocusArea], dayIndex: Int, minutes: Int) -> [FocusArea] {
+        let allowed = FocusArea.maxSelections(forMinutes: minutes)
+        guard areas.count > allowed else { return areas }
+        let start = (dayIndex * allowed) % areas.count
+        return (0..<allowed).map { areas[(start + $0) % areas.count] }
     }
 
     static func build(_ day: WorkoutDay, for profile: UserProfile, history: [WorkoutSession] = []) -> PlannedWorkout {

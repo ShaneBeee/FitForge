@@ -163,11 +163,37 @@ enum TrainingPhase: Int, CaseIterable, Identifiable, Codable {
     }
 }
 
-/// Areas to prioritize, on top of the main goal (pick up to 3).
+/// Areas to prioritize, on top of the main goal.
 enum FocusArea: String, CaseIterable, Identifiable, Codable {
     case bellyFat, arms, chest, shoulders, back, abs, glutes, legs
 
-    static let maxSelections = 3
+    /// How many focus areas fit a workout of this length: more time, more room to honor them.
+    static func maxSelections(forMinutes minutes: Int) -> Int {
+        switch minutes {
+        case ..<40: 3
+        case ..<55: 4
+        default: 5
+        }
+    }
+
+    /// How many workouts in a rotation already open with a main lift that trains this area.
+    func mainLiftDays(in days: [WorkoutDay]) -> Int {
+        days.filter { day in
+            day.slots.prefix(2).contains { coveragePatterns.contains($0) }
+        }.count
+    }
+
+    /// Movements that train this area hard, whether or not it's a focus.
+    private var coveragePatterns: [MovementPattern] {
+        switch self {
+        case .bellyFat, .abs: [.core]
+        case .arms: [.biceps, .triceps]
+        case .chest: [.push]
+        case .shoulders: [.shoulders]
+        case .back: [.pull]
+        case .glutes, .legs: [.squat, .lunge, .hinge]
+        }
+    }
 
     var id: String { rawValue }
 

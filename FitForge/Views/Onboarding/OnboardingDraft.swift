@@ -142,11 +142,17 @@ final class OnboardingDraft {
         if !restWasCustomized { restSeconds = goal.defaultRestSeconds }
     }
 
-    /// Adds or removes a focus area (up to 3).
+    /// How many focus areas can be picked: 3 for 20–30 min workouts, 4 at 45, 5 at 60.
+    var maxFocusAreas: Int { FocusArea.maxSelections(forMinutes: workoutMinutes) }
+
+    /// The workouts in the current rotation (for the "already covered" notes).
+    var rotation: [WorkoutDay] { WorkoutPlans.days(forDaysPerWeek: daysPerWeek) }
+
+    /// Adds or removes a focus area (up to the limit for the workout length).
     func toggleFocus(_ area: FocusArea) {
         if focusAreas.contains(area) {
             focusAreas.remove(area)
-        } else if focusAreas.count < FocusArea.maxSelections {
+        } else if focusAreas.count < maxFocusAreas {
             focusAreas.insert(area)
         }
     }
