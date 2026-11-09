@@ -14,6 +14,11 @@ struct WeighInExtrasSheet: View {
     @State private var skeletalMuscle: Double?
     @State private var bmr: Double?
     @State private var metabolicAge: Double?
+    @State private var fatFreeMass: Double?
+    @State private var subcutaneousFat: Double?
+    @State private var bodyWater: Double?
+    @State private var boneMass: Double?
+    @State private var protein: Double?
     @State private var didLoad = false
 
     /// A weigh-in already saved for the chosen day, if any.
@@ -29,7 +34,8 @@ struct WeighInExtrasSheet: View {
     }
 
     private var hasAnyValue: Bool {
-        [visceralFat, muscleMass, skeletalMuscle, bmr, metabolicAge].contains { $0 != nil }
+        [visceralFat, muscleMass, skeletalMuscle, bmr, metabolicAge,
+         fatFreeMass, subcutaneousFat, bodyWater, boneMass, protein].contains { $0 != nil }
     }
 
     var body: some View {
@@ -45,11 +51,23 @@ struct WeighInExtrasSheet: View {
                     }
 
                     FormCard {
+                        row("Subcutaneous fat", unit: "%", value: $subcutaneousFat, last: previous?.subcutaneousFatPercent)
+                        Divider()
                         row("Visceral fat", unit: "", value: $visceralFat, last: previous?.visceralFat, digits: 0)
                         Divider()
                         row("Muscle mass", unit: "lb", value: $muscleMass, last: previous?.muscleMassLbs)
                         Divider()
                         row("Skeletal muscle", unit: "%", value: $skeletalMuscle, last: previous?.skeletalMusclePercent)
+                        Divider()
+                        row("Fat-free mass", unit: "lb", value: $fatFreeMass, last: previous?.fatFreeMassLbs)
+                        Divider()
+                        row("Bone mass", unit: "lb", value: $boneMass, last: previous?.boneMassLbs)
+                    }
+
+                    FormCard {
+                        row("Body water", unit: "%", value: $bodyWater, last: previous?.bodyWaterPercent)
+                        Divider()
+                        row("Protein", unit: "%", value: $protein, last: previous?.proteinPercent)
                         Divider()
                         row("BMR", unit: "kcal", value: $bmr, last: previous?.bmrKcal, digits: 0)
                         Divider()
@@ -112,6 +130,11 @@ struct WeighInExtrasSheet: View {
         skeletalMuscle = existing?.skeletalMusclePercent
         bmr = existing?.bmrKcal
         metabolicAge = existing?.metabolicAge.map(Double.init)
+        fatFreeMass = existing?.fatFreeMassLbs
+        subcutaneousFat = existing?.subcutaneousFatPercent
+        bodyWater = existing?.bodyWaterPercent
+        boneMass = existing?.boneMassLbs
+        protein = existing?.proteinPercent
     }
 
     /// Adds the extras to that day's weigh-in, or creates a new one.
@@ -128,6 +151,11 @@ struct WeighInExtrasSheet: View {
         measurement.skeletalMusclePercent = skeletalMuscle
         measurement.bmrKcal = bmr
         measurement.metabolicAge = metabolicAge.map { Int($0.rounded()) }
+        measurement.fatFreeMassLbs = fatFreeMass
+        measurement.subcutaneousFatPercent = subcutaneousFat
+        measurement.bodyWaterPercent = bodyWater
+        measurement.boneMassLbs = boneMass
+        measurement.proteinPercent = protein
         try? context.save()
     }
 }
@@ -136,5 +164,7 @@ extension BodyMeasurement {
     /// Whether any of the Renpho-only extras were entered.
     var hasExtras: Bool {
         visceralFat != nil || muscleMassLbs != nil || skeletalMusclePercent != nil || bmrKcal != nil || metabolicAge != nil
+            || fatFreeMassLbs != nil || subcutaneousFatPercent != nil || bodyWaterPercent != nil
+            || boneMassLbs != nil || proteinPercent != nil
     }
 }

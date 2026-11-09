@@ -134,7 +134,12 @@ struct ProgressScreen: View {
                         showMeasurementsEntry = true
                     }
 
-                    BodyCompositionCard(measurements: extras, age: age) {
+                    BodyCompositionCard(
+                        measurements: extras,
+                        age: age,
+                        rangeStart: range.startDate,
+                        domainStart: domainStart
+                    ) {
                         showExtrasEntry = true
                     }
 

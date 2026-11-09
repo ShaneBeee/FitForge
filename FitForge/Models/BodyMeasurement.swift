@@ -17,6 +17,11 @@ final class BodyMeasurement {
     var skeletalMusclePercent: Double? = nil
     var bmrKcal: Double? = nil
     var metabolicAge: Int? = nil
+    var fatFreeMassLbs: Double? = nil
+    var subcutaneousFatPercent: Double? = nil
+    var bodyWaterPercent: Double? = nil
+    var boneMassLbs: Double? = nil
+    var proteinPercent: Double? = nil
 
     var sourceRaw: String = MeasurementSource.manual.rawValue
 
