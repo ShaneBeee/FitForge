@@ -23,8 +23,8 @@ enum ProgressRange: String, CaseIterable, Identifiable {
     }
 }
 
-/// The Progress tab: weight, body fat and visceral fat charts, where you stand,
-/// body composition, and workouts per week.
+/// The Progress tab, in four parts: your goals (weight and body fat progress), the Body card
+/// (one chart with chips for every body metric), measurements, and workouts per week.
 struct ProgressScreen: View {
     let profile: UserProfile
 
@@ -39,19 +39,27 @@ struct ProgressScreen: View {
     @State private var hasLoaded = false
     @State private var showExtrasEntry = false
     @State private var showMeasurementsEntry = false
+    /// The Body card's chart. Starts on Weight each time the app opens.
+    @State private var bodyMetricID = BodyMetric.weight.id
+
+    private var bodyMetric: Binding<BodyMetric> {
+        Binding(
+            get: { BodyMetric(id: bodyMetricID) ?? .weight },
+            set: { bodyMetricID = $0.id }
+        )
+    }
 
     /// Weigh-ins that have smart scale extras, oldest first.
     private var extras: [BodyMeasurement] {
         measurements.filter(\.hasExtras)
     }
 
-    /// Visceral fat readings within the chosen range.
-    private var visceralReadings: [HealthKitManager.Reading] {
-        measurements
-            .filter { $0.date >= range.startDate }
-            .compactMap { measurement in
-                measurement.visceralFat.map { HealthKitManager.Reading(value: $0, date: measurement.date) }
-            }
+    private var latestWeight: Double? {
+        weights.last?.value ?? health.latestWeight?.value
+    }
+
+    private var latestBodyFat: Double? {
+        bodyFats.last?.value ?? health.latestBodyFat?.value
     }
 
     private var age: Int? {
@@ -67,91 +75,72 @@ struct ProgressScreen: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    Picker("Time range", selection: $range) {
-                        ForEach(ProgressRange.allCases) { range in
-                            Text(range.rawValue).tag(range)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 16) {
+                        Picker("Time range", selection: $range) {
+                            ForEach(ProgressRange.allCases) { range in
+                                Text(range.rawValue).tag(range)
+                            }
                         }
-                    }
-                    .pickerStyle(.segmented)
+                        .pickerStyle(.segmented)
 
-                    if health.needsAuthorization && health.hasCheckedAuthorization {
-                        connectCard
-                    }
+                        if health.needsAuthorization && health.hasCheckedAuthorization {
+                            connectCard
+                        }
 
-                    MetricChartCard(
-                        title: "Weight",
-                        systemImage: "scalemass.fill",
-                        unit: "lb",
-                        readings: weights,
-                        start: profile.startWeightLbs,
-                        goal: profile.targetWeightLbs,
-                        tint: Theme.blue,
-                        domainStart: domainStart
-                    )
+                        if profile.targetWeightLbs != nil || profile.targetBodyFatPercent != nil {
+                            GoalsCard(
+                                weight: latestWeight,
+                                startWeight: profile.startWeightLbs,
+                                goalWeight: profile.targetWeightLbs,
+                                bodyFat: latestBodyFat,
+                                startBodyFat: profile.startBodyFatPercent,
+                                goalBodyFat: profile.targetBodyFatPercent
+                            ) { metric in
+                                // Show that metric in the Body chart and bring the chart into view.
+                                withAnimation(.snappy) {
+                                    bodyMetricID = metric.id
+                                    proxy.scrollTo("body", anchor: .top)
+                                }
+                            }
+                        }
 
-                    MetricChartCard(
-                        title: "Body fat",
-                        systemImage: "percent",
-                        unit: "%",
-                        readings: bodyFats,
-                        start: profile.startBodyFatPercent,
-                        goal: profile.targetBodyFatPercent,
-                        tint: Theme.green,
-                        domainStart: domainStart
-                    )
-
-                    if extras.contains(where: { $0.visceralFat != nil }) {
-                        MetricChartCard(
-                            title: "Visceral fat",
-                            systemImage: "target",
-                            unit: "",
-                            readings: visceralReadings,
-                            start: extras.first(where: { $0.visceralFat != nil })?.visceralFat,
-                            goal: nil,
-                            tint: Theme.teal,
+                        BodyTrendsCard(
+                            profile: profile,
+                            weights: weights,
+                            bodyFats: bodyFats,
+                            latestWeight: latestWeight,
+                            latestBodyFat: latestBodyFat,
+                            extras: extras,
+                            tapeEntries: tapeEntries,
+                            age: age,
+                            rangeStart: range.startDate,
                             domainStart: domainStart,
-                            fractionDigits: 0
+                            selection: bodyMetric,
+                            onAddMeasurements: { showMeasurementsEntry = true },
+                            onAddExtras: { showExtrasEntry = true }
+                        )
+                        .id("body")
+
+                        MeasurementsSection(
+                            profile: profile,
+                            entries: tapeEntries,
+                            domainStart: domainStart
+                        ) {
+                            showMeasurementsEntry = true
+                        }
+
+                        WorkoutsPerWeekCard(
+                            sessions: sessions,
+                            target: profile.workoutWeekdays.count,
+                            domainStart: domainStart
                         )
                     }
-
-                    whereYouStand
-
-                    TapeBodyFatCard(
-                        profile: profile,
-                        entries: tapeEntries,
-                        scaleBodyFat: bodyFats.last?.value ?? health.latestBodyFat?.value
-                    ) {
-                        showMeasurementsEntry = true
-                    }
-
-                    MeasurementsSection(
-                        profile: profile,
-                        entries: tapeEntries,
-                        domainStart: domainStart
-                    ) {
-                        showMeasurementsEntry = true
-                    }
-
-                    BodyCompositionCard(
-                        measurements: extras,
-                        age: age,
-                        rangeStart: range.startDate,
-                        domainStart: domainStart
-                    ) {
-                        showExtrasEntry = true
-                    }
-
-                    WorkoutsPerWeekCard(
-                        sessions: sessions,
-                        target: profile.workoutWeekdays.count,
-                        domainStart: domainStart
-                    )
+                    .padding()
+                    .animation(.snappy, value: range)
+                    .opacity(hasLoaded ? 1 : 0.5)
                 }
-                .padding()
-                .animation(.snappy, value: range)
-                .opacity(hasLoaded ? 1 : 0.5)
             }
             .navigationTitle("Progress")
             .toolbar {
@@ -180,36 +169,6 @@ struct ProgressScreen: View {
             }
             .refreshable { await load() }
             .task(id: range) { await load() }
-        }
-    }
-
-    @ViewBuilder
-    private var whereYouStand: some View {
-        let weight = weights.last?.value ?? health.latestWeight?.value
-        let bodyFat = bodyFats.last?.value ?? health.latestBodyFat?.value
-        let height = profile.heightInches ?? 0
-
-        if weight != nil || bodyFat != nil {
-            Text("Where you stand")
-                .font(.title3.weight(.bold))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 8)
-        }
-
-        if let weight, height > 0 {
-            WeightRangeCard(weightLbs: weight, heightInches: height, goalLbs: profile.targetWeightLbs)
-        }
-
-        if let bodyFat {
-            BodyFatRangeCard(profile: profile, bodyFatPercent: bodyFat, goalPercent: profile.targetBodyFatPercent)
-        }
-
-        if let visceral = extras.last(where: { $0.visceralFat != nil })?.visceralFat {
-            VisceralFatRangeCard(rating: visceral)
-        }
-
-        if let weight, height > 0 {
-            BMICard(weightLbs: weight, heightInches: height, goalWeightLbs: profile.targetWeightLbs)
         }
     }
 

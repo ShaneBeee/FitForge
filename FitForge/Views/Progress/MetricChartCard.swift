@@ -13,6 +13,12 @@ struct MetricChartCard: View {
     let domainStart: Date
     /// Decimal places shown for values (e.g. 0 for a visceral fat rating).
     var fractionDigits = 1
+    /// Shown inside another card, so no card background of its own.
+    var embedded = false
+    /// The goal progress bar (off when the Goals card already shows it).
+    var showsGoalProgress = true
+    /// For metrics without a goal: which way counts as progress (nil when neither does).
+    var higherIsBetter: Bool? = nil
 
     @State private var selectedDate: Date?
 
@@ -40,9 +46,11 @@ struct MetricChartCard: View {
             }
 
             changeChips
-            goalProgress
+            if showsGoalProgress {
+                goalProgress
+            }
         }
-        .cardStyle()
+        .cardStyle(!embedded)
     }
 
     // MARK: - Header
@@ -144,8 +152,14 @@ struct MetricChartCard: View {
 
     private func changeChip(_ label: String, _ change: Double) -> some View {
         let towardGoal: Bool = {
-            guard let goal, let start, abs(change) >= 0.05 else { return false }
-            return goal < start ? change < 0 : change > 0
+            guard abs(change) >= 0.05 else { return false }
+            if let goal, let start {
+                return goal < start ? change < 0 : change > 0
+            }
+            if let higherIsBetter {
+                return higherIsBetter ? change > 0 : change < 0
+            }
+            return false
         }()
         let sign = change > 0.05 ? "+" : (change < -0.05 ? "−" : "")
 

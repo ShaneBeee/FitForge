@@ -30,18 +30,19 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 - **Suggested weights:** each weighted exercise shows which pair to use (heaviest for legs and hips, middle for presses and rows, lightest for small muscles), changeable mid-workout; the weight is saved with every set
 - **Progression:** when every set of an exercise reached the top of its rep range, the next workout suggests the next weight up ("Try 20 lb")
 - **Outgrown weights:** hitting the top of the range with your heaviest weight two workouts in a row marks the exercise as outgrown; it switches to slow 3-second lowering and 10–15 reps (shown on screen and spoken by the coach) until heavier weights are added
-- **Body composition charts:** smart scale extras (muscle mass, fat-free mass, skeletal muscle, subcutaneous fat, body water, protein, bone mass, BMR, metabolic age, plus visceral fat) can be logged on weigh-in day; the Progress tab charts whichever one you pick over the chosen time range, with the latest value and change since your first entry for each
+- **Body composition charts:** smart scale extras (muscle mass, fat-free mass, skeletal muscle, subcutaneous fat, body water, protein, bone mass, BMR, metabolic age, plus visceral fat) can be logged on weigh-in day and charted in the Progress tab's Body card; "See all scale readings" shows the latest of each with the change since your first entry
 - **What to get next** (Profile → Equipment): which heavier weights you need and for which exercises, then the equipment that would add the most exercises for your level and focus areas, with rough Canadian prices
 - **Focus area limit by workout length:** 3 focus areas for 20–30 minute workouts, 4 at 45, 5 at 60; if there are ever more than fit, they take turns across the week. The picker notes areas that are already a main lift in every workout (e.g. glutes and legs on the 3-day plan)
 - **Apple Watch app:** starting a workout on the iPhone launches FitForge on the Watch, which runs a real workout session and streams live heart rate and calories to the phone's workout screen. The Watch saves the workout to Apple Health with Apple-measured calories and heart rate (no phone estimate or duplicate workout)
 - **Apple Watch controls:** the current exercise, set and rest countdown on the wrist, with Start set / Done / Skip rest, skip set, skip exercise, pause and ±15s rest, all kept in sync with the iPhone; a wrist tap when rest is up
-- **Landscape layout** for the workout screen
-- **Progress charts:** weight and body fat history from Apple Health with goal lines, change since start, last-4-weeks change and goal progress; tap and drag to inspect any reading
-- **Where you stand:** weight, body fat, visceral fat and BMI shown on colour-coded range bars (healthy weight for your height, ACE body fat categories, the standard smart scale visceral fat rating), each with your goal marked where there is one
-- **Weigh-in extras:** quick entry for the smart scale numbers Apple Health doesn't store (visceral fat, muscle mass, skeletal muscle %, BMR, metabolic age), with a weigh-in day prompt on the dashboard, a visceral fat chart, and a body composition card showing change since your first entry
-- **Body measurements:** belly, waist, chest, upper arms and more (choose which to track), with a body silhouette that shows exactly where to measure, a reminder every 4 weeks on weigh-in day, and charts with change since your first measurement
-- **Body fat, two ways:** the smart scale reading next to a tape-measure estimate (US Navy method)
-- **Workouts per week** chart against your weekly target
+- **Landscape layout** for the workout screen: the timer ring on the left sized to fit the screen, with Up next, the reps adjuster and rest buttons on the right
+- **Progress tab, in four parts:**
+  - **Your goals:** weight and body fat side by side, each with the current value, change since start, a progress bar and how much is left; tap one to show it in the Body chart
+  - **Body:** one chart with chips for weight, body fat, visceral fat and every smart scale extra (opens on weight). Each shows goal lines, change since start and over the last 4 weeks, and tap-and-drag to inspect any reading. Under the chart: where you stand on a colour-coded range bar (healthy weight for your height, ACE body fat categories, the standard visceral fat rating, and Renpho's standard ranges for muscle mass, skeletal muscle, subcutaneous fat, body water, protein, bone mass and metabolic age), a short explanation of what each number means, BMI under weight, and body fat two ways (smart scale vs. a US Navy tape-measure estimate) under body fat
+  - **Measurements:** chips to pick a spot, its chart, and the latest of each with change since your first measurement (tap a row to chart it)
+  - **Workouts per week** against your weekly target
+- **Weigh-in extras:** quick entry for the smart scale numbers Apple Health doesn't store (visceral fat, muscle mass, skeletal muscle %, BMR, metabolic age), with a weigh-in day prompt on the dashboard
+- **Body measurements:** belly, waist, chest, upper arms and more (choose which to track), with a body silhouette that shows exactly where to measure and a reminder every 4 weeks on weigh-in day
 - **History:** past workouts grouped by week with set-by-set details, missed workouts, make-up and ended-early tags, swipe to delete, and a weigh-in log with changes between readings
 - **Missed workouts and make-ups:** a workout not done on its day is marked missed and can be made up later that week; every week starts fresh at the beginning of the rotation
 - **Dashboard:** today's workout (or a make-up) with a Start button, plus this week's plan at a glance
@@ -102,7 +103,7 @@ FitForge/
     ├── Onboarding/              First-time setup flow
     ├── Dashboard/               Home screen
     ├── Workout/                 Workout list, guided mode, timer ring and summary
-    ├── Progress/                Charts, range cards, body composition and weigh-in extras entry
+    ├── Progress/                Goals and Body cards, charts, range bars, scale readings and weigh-in extras entry
     ├── History/                 Past workouts, workout details and weigh-ins
     ├── Measurements/            Body silhouette, measurement entry and progress
     ├── Profile/                 Profile, section editors and voice picker

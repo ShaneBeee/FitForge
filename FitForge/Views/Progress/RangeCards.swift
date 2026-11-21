@@ -110,21 +110,34 @@ struct RangeCard<Extra: View>: View {
     var goal: Double? = nil
     var goalText: String? = nil
     var note: String? = nil
+    /// Shown under a chart in the Body card: a one-line header and no card background.
+    var compact = false
     @ViewBuilder var extra: Extra
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline) {
-                Label(title, systemImage: systemImage)
-                    .font(.headline)
-                    .foregroundStyle(tint)
-                Spacer()
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text(valueText)
-                        .font(.title2.weight(.bold).monospacedDigit())
-                    Text(statusText)
-                        .font(.caption)
+        VStack(alignment: .leading, spacing: compact ? 10 : 14) {
+            if compact {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(statusText)
+                        .font(.subheadline.weight(.semibold))
+                }
+            } else {
+                HStack(alignment: .firstTextBaseline) {
+                    Label(title, systemImage: systemImage)
+                        .font(.headline)
+                        .foregroundStyle(tint)
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 0) {
+                        Text(valueText)
+                            .font(.title2.weight(.bold).monospacedDigit())
+                        Text(statusText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 
@@ -149,15 +162,16 @@ struct RangeCard<Extra: View>: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .cardStyle()
+        .cardStyle(!compact)
     }
 }
 
 extension RangeCard where Extra == EmptyView {
     init(title: String, systemImage: String, tint: Color, valueText: String, statusText: String,
-         bands: [RangeBand], value: Double, goal: Double? = nil, goalText: String? = nil, note: String? = nil) {
+         bands: [RangeBand], value: Double, goal: Double? = nil, goalText: String? = nil, note: String? = nil,
+         compact: Bool = false) {
         self.init(title: title, systemImage: systemImage, tint: tint, valueText: valueText, statusText: statusText,
-                  bands: bands, value: value, goal: goal, goalText: goalText, note: note) { EmptyView() }
+                  bands: bands, value: value, goal: goal, goalText: goalText, note: note, compact: compact) { EmptyView() }
     }
 }
 
@@ -172,6 +186,7 @@ struct WeightRangeCard: View {
     let weightLbs: Double
     let heightInches: Double
     let goalLbs: Double?
+    var compact = false
 
     private func pounds(atBMI bmi: Double) -> Double {
         bmi * heightInches * heightInches / 703
@@ -205,7 +220,7 @@ struct WeightRangeCard: View {
         let healthyHigh = Int(pounds(atBMI: 25).rounded(.down))
 
         RangeCard(
-            title: "Weight",
+            title: compact ? "Where you stand" : "Weight",
             systemImage: "scalemass.fill",
             tint: Theme.blue,
             valueText: "\(format(weightLbs)) lb",
@@ -214,7 +229,8 @@ struct WeightRangeCard: View {
             value: weightLbs,
             goal: goalLbs,
             goalText: goalLbs.map { "Your goal: \(format($0)) lb" },
-            note: "Healthy weight for \(heightText): about \(healthyLow)–\(healthyHigh) lb."
+            note: "Healthy weight for \(heightText): about \(healthyLow)–\(healthyHigh) lb.",
+            compact: compact
         )
     }
 }
@@ -227,6 +243,7 @@ struct BodyFatRangeCard: View {
     let profile: UserProfile
     let bodyFatPercent: Double
     let goalPercent: Double?
+    var compact = false
 
     private func bands(for ranges: BodyFatRanges) -> [RangeBand] {
         switch ranges {
@@ -255,7 +272,7 @@ struct BodyFatRangeCard: View {
             let status = RangeBar.band(for: bodyFatPercent, in: bands)?.label ?? ""
 
             RangeCard(
-                title: "Body fat",
+                title: compact ? "Where you stand" : "Body fat",
                 systemImage: "percent",
                 tint: Theme.green,
                 valueText: "\(format(bodyFatPercent))%",
@@ -264,7 +281,8 @@ struct BodyFatRangeCard: View {
                 value: bodyFatPercent,
                 goal: goalPercent,
                 goalText: goalPercent.map { "Your goal: \(format($0))%" },
-                note: "Ranges from the American Council on Exercise (\(ranges.title.lowercased()))."
+                note: "Ranges from the American Council on Exercise (\(ranges.title.lowercased())).",
+                compact: compact
             )
         } else {
             chooser
@@ -290,7 +308,7 @@ struct BodyFatRangeCard: View {
                 }
             }
         }
-        .cardStyle()
+        .cardStyle(!compact)
     }
 }
 
@@ -301,6 +319,7 @@ struct BMICard: View {
     let weightLbs: Double
     let heightInches: Double
     let goalWeightLbs: Double?
+    var compact = false
 
     private func bmi(for pounds: Double) -> Double {
         703 * pounds / (heightInches * heightInches)
@@ -319,7 +338,7 @@ struct BMICard: View {
         let goal = goalWeightLbs.map { bmi(for: $0) }
 
         RangeCard(
-            title: "BMI",
+            title: compact ? "BMI \(format(value))" : "BMI",
             systemImage: "figure.stand",
             tint: Theme.teal,
             valueText: format(value),
@@ -328,7 +347,8 @@ struct BMICard: View {
             value: value,
             goal: goal,
             goalText: goal.map { "BMI at your goal weight: \(format($0))" },
-            note: "BMI only looks at height and weight, so it can't tell muscle from fat. Your body fat % is the better measure of progress."
+            note: "BMI only looks at height and weight, so it can't tell muscle from fat. Your body fat % is the better measure of progress.",
+            compact: compact
         )
     }
 }

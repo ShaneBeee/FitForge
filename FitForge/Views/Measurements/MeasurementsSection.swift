@@ -1,7 +1,8 @@
 import SwiftUI
 import SwiftData
 
-/// Progress section for tape measurements: latest values with changes, and a chart for one site.
+/// Progress card for tape measurements: chips to pick a spot, its chart, then the latest of each
+/// with changes (tap a row to chart it).
 struct MeasurementsSection: View {
     let profile: UserProfile
     let entries: [TapeMeasurement]      // oldest first
@@ -28,31 +29,7 @@ struct MeasurementsSection: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
-            summaryCard
-
-            if let site = activeSite {
-                if sitesWithData.count > 1 {
-                    sitePicker
-                }
-                MetricChartCard(
-                    title: site.title,
-                    systemImage: "ruler",
-                    unit: "in",
-                    readings: readings(for: site, since: domainStart),
-                    start: entries.first(where: { $0.site == site })?.inches,
-                    goal: nil,
-                    tint: Theme.teal,
-                    domainStart: domainStart
-                )
-            }
-        }
-    }
-
-    // MARK: - Summary
-
-    private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Label("Measurements", systemImage: "ruler")
                     .font(.headline)
@@ -74,6 +51,28 @@ struct MeasurementsSection: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             } else {
+                if sitesWithData.count > 1 {
+                    sitePicker
+                }
+
+                if let site = activeSite {
+                    MetricChartCard(
+                        title: site.title,
+                        systemImage: "ruler",
+                        unit: "in",
+                        readings: readings(for: site, since: domainStart),
+                        start: entries.first(where: { $0.site == site })?.inches,
+                        goal: nil,
+                        tint: Theme.teal,
+                        domainStart: domainStart,
+                        embedded: true,
+                        higherIsBetter: higherIsBetter(for: site)
+                    )
+                    .id(site)   // fresh chart for each spot
+                }
+
+                Divider()
+
                 ForEach(sitesWithData) { site in
                     summaryRow(site)
                 }
@@ -85,6 +84,7 @@ struct MeasurementsSection: View {
             }
         }
         .cardStyle()
+        .animation(.snappy, value: activeSite)
     }
 
     private func summaryRow(_ site: MeasureSite) -> some View {
@@ -93,8 +93,19 @@ struct MeasurementsSection: View {
         let first = siteEntries.first?.inches ?? latest
         let change = latest - first
 
-        return HStack {
+        return Button {
+            chartSite = site
+        } label: {
+            summaryRowContent(site: site, siteEntries: siteEntries, latest: latest, change: change)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func summaryRowContent(site: MeasureSite, siteEntries: [TapeMeasurement], latest: Double, change: Double) -> some View {
+        HStack {
             Text(site.title)
+                .foregroundStyle(site == activeSite ? Theme.teal : .primary)
+                .fontWeight(site == activeSite ? .semibold : .regular)
             Spacer()
             if siteEntries.count > 1 && abs(change) >= 0.05 {
                 Text(changeText(change))
@@ -106,23 +117,16 @@ struct MeasurementsSection: View {
                 .frame(minWidth: 64, alignment: .trailing)
         }
         .monospacedDigit()
+        .contentShape(Rectangle())
     }
 
     private var sitePicker: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 ForEach(sitesWithData) { site in
-                    let isSelected = site == activeSite
-                    Button(site.title) { chartSite = site }
-                        .font(.subheadline.weight(.semibold))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .foregroundStyle(isSelected ? .white : .primary)
-                        .background(
-                            isSelected ? AnyShapeStyle(Theme.teal) : AnyShapeStyle(.background.secondary),
-                            in: Capsule()
-                        )
-                        .buttonStyle(.plain)
+                    MetricChip(title: site.title, isSelected: site == activeSite, tint: Theme.teal) {
+                        chartSite = site
+                    }
                 }
             }
         }
@@ -140,6 +144,14 @@ struct MeasurementsSection: View {
         (change > 0 ? "+" : "−") + abs(change).formatted(.number.precision(.fractionLength(0...2))) + " in"
     }
 
+    private func higherIsBetter(for site: MeasureSite) -> Bool? {
+        switch site.goodDirection {
+        case .smaller: false
+        case .bigger: true
+        case .neutral: nil
+        }
+    }
+
     private func isGood(_ change: Double, for site: MeasureSite) -> Bool {
         switch site.goodDirection {
         case .smaller: change < 0
@@ -154,6 +166,8 @@ struct TapeBodyFatCard: View {
     let profile: UserProfile
     let entries: [TapeMeasurement]     // oldest first
     let scaleBodyFat: Double?
+    /// Shown under the body fat chart, so no card background of its own.
+    var embedded = false
     let onAdd: () -> Void
 
     private func latest(_ site: MeasureSite) -> Double? {
@@ -179,9 +193,15 @@ struct TapeBodyFatCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Body fat, two ways", systemImage: "arrow.left.arrow.right")
-                .font(.headline)
-                .foregroundStyle(Theme.green)
+            if embedded {
+                Text("Body fat, two ways")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            } else {
+                Label("Body fat, two ways", systemImage: "arrow.left.arrow.right")
+                    .font(.headline)
+                    .foregroundStyle(Theme.green)
+            }
 
             if let estimate {
                 HStack(spacing: 10) {
@@ -192,7 +212,7 @@ struct TapeBodyFatCard: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else if profile.bodyFatRanges == nil {
-                Text("Choose male or female body fat ranges (on the body fat card above, or in Profile) to get a tape-measure estimate.")
+                Text("Choose male or female body fat ranges (just above, or in Profile) to get a tape-measure estimate.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             } else {
@@ -205,7 +225,7 @@ struct TapeBodyFatCard: View {
                     .tint(Theme.green)
             }
         }
-        .cardStyle()
+        .cardStyle(!embedded)
     }
 
     private func value(_ title: String, _ percent: Double?) -> some View {

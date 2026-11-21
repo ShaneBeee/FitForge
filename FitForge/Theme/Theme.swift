@@ -23,4 +23,15 @@ extension View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.background.secondary, in: RoundedRectangle(cornerRadius: Theme.cardCornerRadius, style: .continuous))
     }
+
+    /// The card background only when `enabled`. Lets a card sit inside another card
+    /// without a box inside a box.
+    @ViewBuilder
+    func cardStyle(_ enabled: Bool) -> some View {
+        if enabled {
+            cardStyle()
+        } else {
+            frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
 }
