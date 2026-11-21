@@ -28,12 +28,24 @@ struct GuidedWorkoutView: View {
 
                     if isLandscape {
                         HStack(spacing: 32) {
-                            mainDisplay(ringSize: min(geometry.size.height * 0.62, 280))
-                                .frame(maxWidth: .infinity)
-                            controls
-                                .frame(width: min(380, geometry.size.width * 0.42))
+                            // Size the ring from the space actually left under the progress bar,
+                            // not the whole screen, so it can't spill over the header or off the bottom.
+                            GeometryReader { area in
+                                mainDisplay(ringSize: landscapeRingSize(in: area.size), showsUpNext: false)
+                                    .frame(width: area.size.width, height: area.size.height)
+                            }
+
+                            // "Up next" lives in the right column in landscape, next to the reps and rest buttons.
+                            VStack(spacing: 16) {
+                                if engine.phase == .resting, let current = engine.current {
+                                    upNext(current)
+                                }
+                                controls
+                            }
+                            .frame(width: min(380, geometry.size.width * 0.42))
                         }
                         .frame(maxHeight: .infinity)
+                        .padding(.top, 12)
                     } else {
                         Spacer(minLength: 12)
                         mainDisplay(ringSize: min(geometry.size.width * 0.72, 300))
@@ -136,8 +148,17 @@ struct GuidedWorkoutView: View {
 
     // MARK: - Main display
 
+    /// Ring size for landscape: fits the left area, leaving room for the ring's thick stroke
+    /// and, during a timed hold, the exercise name under it.
+    private func landscapeRingSize(in area: CGSize) -> CGFloat {
+        let strokeRoom: CGFloat = 24
+        let nameRoom: CGFloat = engine.phase == .working ? 56 : 0
+        let fit = min(area.height - strokeRoom - nameRoom, area.width - strokeRoom)
+        return max(140, min(fit, 280))
+    }
+
     @ViewBuilder
-    private func mainDisplay(ringSize: CGFloat) -> some View {
+    private func mainDisplay(ringSize: CGFloat, showsUpNext: Bool = true) -> some View {
         if let current = engine.current {
             switch engine.phase {
             case .notStarted, .ready:
@@ -156,7 +177,9 @@ struct GuidedWorkoutView: View {
             case .resting:
                 VStack(spacing: 16) {
                     TimerRing(engine: engine, label: "Rest", size: ringSize)
-                    upNext(current)
+                    if showsUpNext {
+                        upNext(current)
+                    }
                 }
             case .finished:
                 EmptyView()
