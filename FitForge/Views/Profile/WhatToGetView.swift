@@ -15,6 +15,10 @@ struct WhatToGetView: View {
         EquipmentAdvisor.suggestions(for: profile)
     }
 
+    private var benchUpgrade: BenchUpgrade? {
+        EquipmentAdvisor.benchUpgrade(for: profile)
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -26,7 +30,10 @@ struct WhatToGetView: View {
                 }
 
                 sectionTitle(heavier.isEmpty ? "Ideas for your setup" : "Other ideas", systemImage: "lightbulb.fill")
-                if suggestions.isEmpty {
+                if let benchUpgrade {
+                    benchUpgradeCard(benchUpgrade)
+                }
+                if suggestions.isEmpty && benchUpgrade == nil {
                     Text("Your setup already covers everything in the exercise library at your level. Nice.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -141,11 +148,46 @@ struct WhatToGetView: View {
         .cardStyle()
     }
 
+    /// "Upgrade your flat bench": the incline/decline exercises a better bench would add.
+    private func benchUpgradeCard(_ upgrade: BenchUpgrade) -> some View {
+        let count = upgrade.unlocks.count
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: EquipmentKind.bench.systemImage)
+                    .font(.title2)
+                    .foregroundStyle(Theme.gradient)
+                    .frame(width: 32)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Upgrade to an \(upgrade.to.title.lowercased())")
+                        .font(.headline)
+                    Text("You have a \(upgrade.from.title.lowercased()). \(upgrade.to.detail)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+                Text(EquipmentAdvisor.priceRange(for: .bench))
+                    .font(.subheadline.weight(.semibold).monospacedDigit())
+                    .foregroundStyle(Theme.blue)
+            }
+
+            Text(reasonText(count: count, matches: upgrade.focusMatches))
+                .font(.subheadline)
+
+            FlowTags(items: upgrade.unlocks.prefix(6).map(\.name) + (count > 6 ? ["+\(count - 6) more"] : []))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardStyle()
+    }
+
     private func reason(for suggestion: EquipmentSuggestion) -> String {
-        let count = suggestion.unlocks.count
+        reasonText(count: suggestion.unlocks.count, matches: suggestion.focusMatches)
+    }
+
+    private func reasonText(count: Int, matches: [FocusArea]) -> String {
         let adds = "Adds \(count) exercise\(count == 1 ? "" : "s") at your level"
-        guard !suggestion.focusMatches.isEmpty else { return adds + "." }
-        let areas = suggestion.focusMatches.map { $0.title.lowercased() }
+        guard !matches.isEmpty else { return adds + "." }
+        let areas = matches.map { $0.title.lowercased() }
         let list = areas.count == 1 ? areas[0] : areas.dropLast().joined(separator: ", ") + " and " + areas.last!
         return adds + ", including work for your \(list) focus."
     }

@@ -529,6 +529,73 @@ enum ExerciseLibrary {
             pattern: .core, difficulty: .advanced, equipment: [.pullUpBar], muscleOverride: [.abs, .grip]
         ),
 
+        // Bench (any)
+        Exercise(
+            id: "db-bench-fly", name: "Dumbbell Fly",
+            summary: "Lying on a flat bench, open your arms wide and hug them back together. Stretches and shapes the chest.",
+            cues: ["Slight bend in the elbows the whole time", "Lower out wide until you feel a chest stretch", "Squeeze your chest to bring them back up"],
+            pattern: .push, difficulty: .intermediate, equipment: [.dumbbells, .bench], weightRange: 5...35,
+            cautions: [.shoulders], muscleOverride: [.chest, .shoulders]
+        ),
+        Exercise(
+            id: "bench-leg-raise", name: "Bench Leg Raise",
+            summary: "Lying on a bench, holding on behind your head, raise straight legs. Hits the lower abs.",
+            cues: ["Grip the bench behind your head", "Keep your lower back pressed down", "Lower your legs slowly, stop just above the bench"],
+            pattern: .core, difficulty: .intermediate, equipment: [.bench]
+        ),
+
+        // Adjustable bench (incline)
+        Exercise(
+            id: "db-incline-press", name: "Incline Dumbbell Press",
+            summary: "A dumbbell press with the bench tilted up. Targets the upper chest for a fuller look.",
+            cues: ["Bench at about 30°", "Lower the dumbbells to upper-chest level", "Press up and slightly in"],
+            pattern: .push, difficulty: .intermediate, equipment: [.dumbbells, .bench], weightRange: 10...70,
+            muscleOverride: [.chest, .shoulders, .triceps], benchAngle: .incline
+        ),
+        Exercise(
+            id: "db-incline-fly", name: "Incline Dumbbell Fly",
+            summary: "A fly on an incline bench, shifting the stretch to the upper chest.",
+            cues: ["Bench at about 30°", "Soft elbows, arms open wide", "Bring them together over your upper chest"],
+            pattern: .push, difficulty: .intermediate, equipment: [.dumbbells, .bench], weightRange: 5...30,
+            cautions: [.shoulders], muscleOverride: [.chest, .shoulders], benchAngle: .incline
+        ),
+        Exercise(
+            id: "chest-supported-row", name: "Chest-Supported Row",
+            summary: "Lie face down on an incline bench and row. Your chest is supported, so it's easy on the lower back.",
+            cues: ["Bench at about 30–45°, chest on the pad", "Pull the dumbbells to your hips", "Squeeze your shoulder blades, then lower slowly"],
+            pattern: .pull, difficulty: .beginner, equipment: [.dumbbells, .bench], weightRange: 10...60,
+            muscleOverride: [.upperBack, .biceps], benchAngle: .incline
+        ),
+        Exercise(
+            id: "seated-db-press", name: "Seated Dumbbell Press",
+            summary: "An overhead press sitting on the bench with the back upright. The backrest keeps you steady.",
+            cues: ["Backrest upright, back flat against it", "Dumbbells at shoulder height, palms forward", "Press straight up without arching"],
+            pattern: .shoulders, difficulty: .intermediate, equipment: [.dumbbells, .bench], weightRange: 8...40,
+            cautions: [.shoulders], muscleOverride: [.shoulders, .triceps], benchAngle: .incline
+        ),
+        Exercise(
+            id: "incline-db-curl", name: "Incline Dumbbell Curl",
+            summary: "Curls lying back on an incline bench. Your arms hang behind you for a big biceps stretch.",
+            cues: ["Bench at about 45°, arms hanging straight down", "Keep your elbows still as you curl", "Lower all the way down slowly"],
+            pattern: .biceps, difficulty: .intermediate, equipment: [.dumbbells, .bench], weightRange: 5...30,
+            benchAngle: .incline
+        ),
+
+        // Adjustable bench (decline)
+        Exercise(
+            id: "db-decline-press", name: "Decline Dumbbell Press",
+            summary: "A dumbbell press with the bench tilted down and your feet hooked in. Works the lower chest.",
+            cues: ["Feet secured under the leg holder", "Lower the dumbbells to lower-chest level", "Press up and slightly in"],
+            pattern: .push, difficulty: .intermediate, equipment: [.dumbbells, .bench], weightRange: 10...70,
+            muscleOverride: [.chest, .triceps], benchAngle: .decline
+        ),
+        Exercise(
+            id: "decline-crunch", name: "Decline Crunch",
+            summary: "Crunches on a decline bench with your feet hooked in. Harder than floor crunches.",
+            cues: ["Feet secured under the leg holder", "Curl up until your shoulders leave the pad", "Lower slowly — don't drop back"],
+            pattern: .core, difficulty: .intermediate, equipment: [.bench], benchAngle: .decline
+        ),
+
         // Step or box
         Exercise(
             id: "box-step-up", name: "Step-Up",
@@ -537,7 +604,7 @@ enum ExerciseLibrary {
             pattern: .lunge, difficulty: .beginner, equipment: [.step], isUnilateral: true
         ),
         Exercise(
-            id: "decline-push-up", name: "Decline Push-Up",
+            id: "step-decline-push-up", name: "Decline Push-Up",
             summary: "A push-up with your feet up on a step. Shifts the work toward your upper chest and shoulders.",
             cues: ["Feet on the step, hands on the floor", "Body in one straight line", "Lower your chest between your hands"],
             pattern: .push, difficulty: .advanced, equipment: [.step], cautions: [.wrists]

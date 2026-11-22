@@ -117,6 +117,8 @@ struct Exercise: Identifiable, Hashable {
     var isUnilateral = false
     /// Muscles worked, when they differ from the usual for this movement.
     var muscleOverride: [MuscleGroup]? = nil
+    /// For bench exercises that need the bench tilted (incline or decline). Nil means any bench.
+    var benchAngle: BenchAngle? = nil
 
     /// The main muscles this exercise works.
     var muscles: [MuscleGroup] { muscleOverride ?? pattern.muscles }

@@ -65,7 +65,11 @@ struct ExerciseDetailView: View {
     }
 
     private var equipmentText: String {
-        let names = EquipmentKind.allCases.filter { exercise.equipment.contains($0) }.map(\.title)
+        let names = EquipmentKind.allCases.filter { exercise.equipment.contains($0) }.map { kind -> String in
+            // e.g. "Bench (incline)"
+            if kind == .bench, let angle = exercise.benchAngle { return "\(kind.title) (\(angle.title))" }
+            return kind.title
+        }
         return names.isEmpty ? "Bodyweight" : names.joined(separator: ", ")
     }
 

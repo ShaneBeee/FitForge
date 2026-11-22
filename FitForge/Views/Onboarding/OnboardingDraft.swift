@@ -49,6 +49,8 @@ final class OnboardingDraft {
     var adjustableMax: [EquipmentKind: Double] = [:]
     /// Owned, but not used in workouts yet.
     var notInUse: Set<EquipmentKind> = []
+    /// What the bench can do (only used when a bench is selected).
+    var benchType: BenchType = .flat
 
     // Ability
     var abilityTiers: [AbilityQuestion: Int] = [:]
@@ -91,6 +93,7 @@ final class OnboardingDraft {
         for item in profile.equipment ?? [] {
             selectedEquipment.insert(item.kind)
             if !item.isInUse { notInUse.insert(item.kind) }
+            if item.kind == .bench { benchType = item.benchType }
             if item.isAdjustable {
                 adjustableKinds.insert(item.kind)
                 adjustableMin[item.kind] = item.weightLbs
@@ -206,7 +209,9 @@ final class OnboardingDraft {
         var items: [EquipmentItem] = []
         for kind in EquipmentKind.allCases where selectedEquipment.contains(kind) {
             guard kind.hasWeight else {
-                items.append(EquipmentItem(kind: kind))
+                let item = EquipmentItem(kind: kind)
+                if kind == .bench { item.benchType = benchType }
+                items.append(item)
                 continue
             }
             if adjustableKinds.contains(kind), let low = adjustableMin[kind], let high = adjustableMax[kind] {

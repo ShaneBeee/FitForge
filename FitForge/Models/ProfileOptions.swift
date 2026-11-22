@@ -361,7 +361,7 @@ enum EquipmentKind: String, CaseIterable, Identifiable, Codable {
         case .kettlebell: "Any single kettlebell"
         case .medicineBall: "A weighted ball for throws, slams and twists"
         case .chair: "Something solid to step on or lean on"
-        case .bench: "A workout or weight bench"
+        case .bench: "A flat or adjustable workout bench"
         case .step: "An aerobic step, plyo box or the bottom stair"
         case .pullUpBar: "A doorway or mounted bar"
         case .pushUpHandles: "Handles or parallettes — easier on the wrists"
@@ -397,6 +397,65 @@ enum EquipmentKind: String, CaseIterable, Identifiable, Codable {
     var hasWeight: Bool {
         self == .dumbbells || self == .kettlebell
     }
+}
+
+/// The angle an exercise needs the bench at.
+enum BenchAngle: String, Codable {
+    case flat, incline, decline
+
+    var title: String {
+        switch self {
+        case .flat: "flat"
+        case .incline: "incline"
+        case .decline: "decline"
+        }
+    }
+}
+
+/// What kind of bench the user has. Each one can do everything the one before it can.
+enum BenchType: String, CaseIterable, Identifiable, Codable, Comparable {
+    case flat
+    case adjustable
+    case adjustableDecline
+
+    var id: String { rawValue }
+
+    /// Short label for the picker.
+    var shortTitle: String {
+        switch self {
+        case .flat: "Flat"
+        case .adjustable: "Adjustable"
+        case .adjustableDecline: "+ Decline"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .flat: "Flat bench"
+        case .adjustable: "Adjustable bench"
+        case .adjustableDecline: "Adjustable bench with decline"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .flat: "Stays flat. Good for presses, flyes and leg raises."
+        case .adjustable: "The back tilts up for incline work, like incline presses and chest-supported rows."
+        case .adjustableDecline: "Also tilts down, with a leg holder for your feet. Adds decline presses and crunches."
+        }
+    }
+
+    func supports(_ angle: BenchAngle) -> Bool {
+        switch angle {
+        case .flat: true
+        case .incline: self >= .adjustable
+        case .decline: self == .adjustableDecline
+        }
+    }
+
+    private var order: Int { Self.allCases.firstIndex(of: self) ?? 0 }
+
+    static func < (lhs: BenchType, rhs: BenchType) -> Bool { lhs.order < rhs.order }
 }
 
 /// Helpers for Calendar weekday numbers (1 = Sunday … 7 = Saturday).

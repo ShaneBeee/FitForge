@@ -40,6 +40,9 @@ struct EquipmentStep: View {
                                 if kind.hasWeight {
                                     weightsCard(for: kind)
                                 }
+                                if kind == .bench {
+                                    benchTypeCard
+                                }
                             }
                             .padding(.leading, 24)
                             .transition(.move(edge: .top).combined(with: .opacity))
@@ -56,7 +59,26 @@ struct EquipmentStep: View {
         .animation(.snappy, value: draft.selectedEquipment)
         .animation(.snappy, value: draft.adjustableKinds)
         .animation(.snappy, value: draft.notInUse)
+        .animation(.snappy, value: draft.benchType)
         .animation(.snappy, value: showingHeavier)
+    }
+
+    // MARK: - Bench type
+
+    /// Flat, adjustable, or adjustable with decline. Each unlocks more exercises.
+    private var benchTypeCard: some View {
+        FormCard {
+            Picker("Bench type", selection: $draft.benchType) {
+                ForEach(BenchType.allCases) { type in
+                    Text(type.shortTitle).tag(type)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            Text(draft.benchType.detail)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
     }
 
     // MARK: - In use

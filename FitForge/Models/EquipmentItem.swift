@@ -18,6 +18,8 @@ final class EquipmentItem {
     var maxWeightLbs: Double? = nil
     /// Owned but switched off: kept on the list, left out of workouts until turned on.
     var isInUse: Bool = true
+    /// Benches only: flat, adjustable, or adjustable with decline. Nil (older saves) means flat.
+    var benchTypeRaw: String? = nil
 
     var profile: UserProfile?
 
@@ -39,6 +41,11 @@ final class EquipmentItem {
         set { kindRaw = newValue.rawValue }
     }
 
+    var benchType: BenchType {
+        get { benchTypeRaw.flatMap(BenchType.init(rawValue:)) ?? .flat }
+        set { benchTypeRaw = newValue.rawValue }
+    }
+
     /// Every weight this item can be used at (lb). Adjustable gear counts in 5 lb steps.
     var availableWeights: [Double] {
         guard let weightLbs else { return [] }
@@ -51,6 +58,7 @@ final class EquipmentItem {
     /// e.g. "Dumbbells · 25 lb pair", "Adjustable dumbbells · 5–50 lb" or "Pull-up bar · not in use yet"
     var displayName: String {
         let suffix = isInUse ? "" : " · not in use yet"
+        if kind == .bench { return benchType.title + suffix }
         guard kind.hasWeight, let weightLbs else { return kind.title + suffix }
         let low = Self.format(weightLbs)
         if isAdjustable, let maxWeightLbs {
@@ -68,6 +76,11 @@ extension UserProfile {
     /// Equipment switched on for workouts.
     var equipmentInUse: [EquipmentItem] {
         (equipment ?? []).filter(\.isInUse)
+    }
+
+    /// The most capable bench switched on for workouts (nil when there isn't one).
+    var benchType: BenchType? {
+        equipmentInUse.filter { $0.kind == .bench }.map(\.benchType).max()
     }
 
     /// Every weight available for a kind of equipment, lightest first (e.g. dumbbells: 10, 15, 25).

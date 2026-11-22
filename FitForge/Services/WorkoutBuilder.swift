@@ -405,13 +405,22 @@ enum WorkoutBuilder {
     }
 
     /// Whether the user has the equipment (at a suitable weight) and no joint conflicts.
-    /// `adding` asks "what if they also had this?" (used by What to get next).
-    static func isAvailable(_ exercise: Exercise, for profile: UserProfile, adding extra: EquipmentKind? = nil) -> Bool {
+    /// `adding` asks "what if they also had this?" and `bench` "what if their bench were this
+    /// type?" (both used by What to get next).
+    static func isAvailable(_ exercise: Exercise, for profile: UserProfile, adding extra: EquipmentKind? = nil,
+                            bench benchOverride: BenchType? = nil) -> Bool {
         // Only equipment switched on for workouts (owned-but-not-yet items are left out).
         var owned = Set(profile.equipmentInUse.map(\.kind))
         if let extra { owned.insert(extra) }
         guard exercise.equipment.isSubset(of: owned) else { return false }
         guard exercise.cautions.isDisjoint(with: profile.jointCautions) else { return false }
+
+        // Incline and decline exercises need a bench that tilts that way. A suggested new bench
+        // is assumed to be adjustable, since that's what the price in What to get next is for.
+        if let angle = exercise.benchAngle {
+            let bench = benchOverride ?? profile.benchType ?? (extra == .bench ? .adjustable : nil)
+            guard let bench, bench.supports(angle) else { return false }
+        }
 
         if let range = exercise.weightRange {
             for kind in exercise.equipment where kind.hasWeight && kind != extra {

@@ -24,6 +24,15 @@ struct EquipmentSuggestion: Identifiable {
     var id: String { kind.rawValue }
 }
 
+/// A more capable bench than the one the user has, and what it would add.
+struct BenchUpgrade {
+    let from: BenchType
+    let to: BenchType
+    /// Incline/decline exercises it would add to the user's options.
+    let unlocks: [Exercise]
+    let focusMatches: [FocusArea]
+}
+
 /// Works out what equipment would help most next, for this user's goals, level and focus areas.
 enum EquipmentAdvisor {
 
@@ -79,6 +88,28 @@ enum EquipmentAdvisor {
             .sorted { $0.score > $1.score }
             .prefix(limit)
             .map(\.suggestion)
+    }
+
+    // MARK: - Bench upgrade
+
+    /// For someone with a flat (or incline-only) bench: what an adjustable bench with decline would add.
+    /// Folding adjustable benches usually include the decline leg holder, so that's the one suggested.
+    static func benchUpgrade(for profile: UserProfile) -> BenchUpgrade? {
+        guard let current = profile.benchType, current < .adjustableDecline else { return nil }
+        let target = BenchType.adjustableDecline
+
+        let unlocks = ExerciseLibrary.all.filter { exercise in
+            exercise.benchAngle != nil
+                && WorkoutBuilder.isAvailable(exercise, for: profile, bench: target)
+                && !WorkoutBuilder.isAvailable(exercise, for: profile)
+                && exercise.difficulty.rawValue <= WorkoutBuilder.level(for: exercise.pattern, profile: profile).rawValue + 1
+        }
+        guard !unlocks.isEmpty else { return nil }
+
+        let matches = profile.focusAreas.filter { area in
+            unlocks.contains { area.patterns.contains($0.pattern) }
+        }
+        return BenchUpgrade(from: current, to: target, unlocks: unlocks, focusMatches: matches)
     }
 
     // MARK: - Prices
