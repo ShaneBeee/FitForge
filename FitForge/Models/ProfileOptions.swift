@@ -315,6 +315,7 @@ enum EquipmentKind: String, CaseIterable, Identifiable, Codable {
     case bench
     case step
     case pullUpBar
+    case dipStation
     case pushUpHandles
     case suspensionTrainer
     case abWheel
@@ -330,7 +331,7 @@ enum EquipmentKind: String, CaseIterable, Identifiable, Codable {
     var category: EquipmentCategory {
         switch self {
         case .dumbbells, .kettlebell, .medicineBall: .weights
-        case .chair, .bench, .step, .pullUpBar, .pushUpHandles, .suspensionTrainer, .abWheel, .stabilityBall: .bodyweight
+        case .chair, .bench, .step, .pullUpBar, .dipStation, .pushUpHandles, .suspensionTrainer, .abWheel, .stabilityBall: .bodyweight
         case .band, .miniBands: .bands
         case .jumpRope: .cardio
         }
@@ -345,6 +346,7 @@ enum EquipmentKind: String, CaseIterable, Identifiable, Codable {
         case .bench: "Bench"
         case .step: "Step or box"
         case .pullUpBar: "Pull-up bar"
+        case .dipStation: "Dip station"
         case .pushUpHandles: "Push-up handles"
         case .suspensionTrainer: "Suspension trainer"
         case .abWheel: "Ab wheel"
@@ -364,6 +366,7 @@ enum EquipmentKind: String, CaseIterable, Identifiable, Codable {
         case .bench: "A flat or adjustable workout bench"
         case .step: "An aerobic step, plyo box or the bottom stair"
         case .pullUpBar: "A doorway or mounted bar"
+        case .dipStation: "Parallel dip handles: standalone, wall-mounted or on a bench's uprights"
         case .pushUpHandles: "Handles or parallettes — easier on the wrists"
         case .suspensionTrainer: "TRX-style straps over a door or anchor"
         case .abWheel: "A wheel with handles for rollouts"
@@ -383,6 +386,7 @@ enum EquipmentKind: String, CaseIterable, Identifiable, Codable {
         case .bench: "bed.double.fill"
         case .step: "figure.step.training"
         case .pullUpBar: "figure.climbing"
+        case .dipStation: "figure.gymnastics"
         case .pushUpHandles: "figure.strengthtraining.functional"
         case .suspensionTrainer: "figure.flexibility"
         case .abWheel: "circle.circle"

@@ -529,6 +529,42 @@ enum ExerciseLibrary {
             pattern: .core, difficulty: .advanced, equipment: [.pullUpBar], muscleOverride: [.abs, .grip]
         ),
 
+        // Dip station
+        Exercise(
+            id: "dip-support-hold", name: "Dip Support Hold",
+            summary: "Hold yourself up on the dip handles with straight arms. Builds the strength and shoulder control for dips.",
+            cues: ["Arms locked, hands under your shoulders", "Push your shoulders down, away from your ears", "Brace your core and hold still"],
+            pattern: .push, difficulty: .beginner, measure: .time, equipment: [.dipStation],
+            cautions: [.shoulders], muscleOverride: [.shoulders, .triceps, .abs]
+        ),
+        Exercise(
+            id: "feet-assisted-dip", name: "Feet-Assisted Dip",
+            summary: "A dip with your toes on the floor taking some of your weight. The way in to full dips.",
+            cues: ["Toes on the floor in front of you", "Lower slowly until your elbows reach about 90°", "Push up mostly with your arms, using your legs only as needed"],
+            pattern: .triceps, difficulty: .beginner, equipment: [.dipStation],
+            cautions: [.shoulders], muscleOverride: [.triceps, .chest]
+        ),
+        Exercise(
+            id: "negative-dip", name: "Negative Dip",
+            summary: "Jump or step to the top of a dip, then lower yourself as slowly as you can. Builds strength fast.",
+            cues: ["Start at the top, arms straight", "Take 3–5 seconds to lower to about 90°", "Step back up to the top — don't push"],
+            pattern: .push, difficulty: .intermediate, equipment: [.dipStation],
+            cautions: [.shoulders], muscleOverride: [.triceps, .chest, .shoulders]
+        ),
+        Exercise(
+            id: "dip-knee-raise", name: "Knee Raise on Dip Bars",
+            summary: "Support yourself on straight arms and lift your knees toward your chest. Great for the lower abs.",
+            cues: ["Arms locked, shoulders pushed down", "Curl your knees up toward your chest", "Lower slowly — no swinging"],
+            pattern: .core, difficulty: .intermediate, equipment: [.dipStation], muscleOverride: [.abs, .shoulders]
+        ),
+        Exercise(
+            id: "parallel-bar-dip", name: "Parallel Bar Dip",
+            summary: "A full bodyweight dip. One of the best moves for chest and triceps.",
+            cues: ["Lean slightly forward for more chest", "Lower until your elbows reach about 90°", "Press up slowly — no bouncing at the bottom"],
+            pattern: .push, difficulty: .advanced, equipment: [.dipStation],
+            cautions: [.shoulders], muscleOverride: [.chest, .triceps, .shoulders]
+        ),
+
         // Bench (any)
         Exercise(
             id: "db-bench-fly", name: "Dumbbell Fly",

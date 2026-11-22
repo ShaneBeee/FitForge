@@ -124,6 +124,7 @@ enum EquipmentAdvisor {
         case .bench: "$100–250"
         case .step: "$40–90"
         case .pullUpBar: "$30–60"
+        case .dipStation: "$60–150"
         case .pushUpHandles: "$15–30"
         case .suspensionTrainer: "$40–150"
         case .abWheel: "$15–30"
