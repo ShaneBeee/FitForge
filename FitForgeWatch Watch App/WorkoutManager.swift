@@ -26,6 +26,7 @@ final class WorkoutManager: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBui
     @ObservationIgnored private var shouldDiscard = false
     @ObservationIgnored private var restAlertTask: Task<Void, Never>?
     @ObservationIgnored private var alertedTimerEnd: Date?
+    @ObservationIgnored private var handshakeTask: Task<Void, Never>?
 
     private override init() {
         super.init()
@@ -71,6 +72,7 @@ final class WorkoutManager: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBui
             startDate = start
             isRunning = true
             send(.started)
+            keepSayingHello()
         } catch {
             reset()
         }
@@ -80,6 +82,19 @@ final class WorkoutManager: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBui
     func end(discard: Bool) {
         shouldDiscard = discard
         session?.end()
+    }
+
+    /// The first "I'm here" can be missed (the phone wasn't reachable at that moment), so keep
+    /// sending it every 2 seconds, for up to 30 seconds, until the phone sends the workout state.
+    private func keepSayingHello() {
+        handshakeTask?.cancel()
+        handshakeTask = Task { [weak self] in
+            for _ in 0..<15 {
+                try? await Task.sleep(for: .seconds(2))
+                guard !Task.isCancelled, let self, self.isRunning, self.phoneState == nil else { return }
+                self.send(.started)
+            }
+        }
     }
 
     /// Sends a button press to the iPhone, which runs the workout.
@@ -121,6 +136,8 @@ final class WorkoutManager: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBui
         restAlertTask?.cancel()
         restAlertTask = nil
         alertedTimerEnd = nil
+        handshakeTask?.cancel()
+        handshakeTask = nil
     }
 
     private func update(heartRate: Double?, calories: Double?) {
@@ -217,6 +234,14 @@ final class WorkoutManager: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBui
     // MARK: - WCSessionDelegate
 
     nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {}
+
+    /// The phone just became reachable: if it hasn't sent the workout yet, say hello again right away.
+    nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
+        guard session.isReachable else { return }
+        Task { @MainActor in
+            if self.isRunning, self.phoneState == nil { self.send(.started) }
+        }
+    }
 
     nonisolated func session(_ session: WCSession, didReceiveMessageData messageData: Data) {
         guard let message = WatchMessage.decode(messageData) else { return }

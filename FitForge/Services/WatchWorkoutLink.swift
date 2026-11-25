@@ -92,7 +92,10 @@ final class WatchWorkoutLink: NSObject, WCSessionDelegate {
     private func handle(_ message: WatchMessage) {
         switch message {
         case .started:
-            markConnected()
+            // The Watch says "I'm here" until it hears back. Answer every time with the current
+            // state, so a lost reply can't leave the Watch stuck on "Syncing with your iPhone".
+            isConnected = true
+            onConnect?()
         case .metrics(let heartRate, let calories):
             markConnected()
             if let heartRate, heartRate > 0 {
