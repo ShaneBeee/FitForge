@@ -39,6 +39,7 @@ struct ProgressScreen: View {
     @State private var hasLoaded = false
     @State private var showExtrasEntry = false
     @State private var showMeasurementsEntry = false
+    @State private var showReport = false
     /// The Body card's chart. Starts on Weight each time the app opens.
     @State private var bodyMetricID = BodyMetric.weight.id
 
@@ -136,6 +137,8 @@ struct ProgressScreen: View {
                             target: profile.workoutWeekdays.count,
                             domainStart: domainStart
                         )
+
+                        reportCard
                     }
                     .padding()
                     .animation(.snappy, value: range)
@@ -167,9 +170,37 @@ struct ProgressScreen: View {
             .sheet(isPresented: $showMeasurementsEntry) {
                 MeasurementsSheet(profile: profile)
             }
+            .sheet(isPresented: $showReport) {
+                ProgressReportSheet(profile: profile)
+            }
             .refreshable { await load() }
             .task(id: range) { await load() }
         }
+    }
+
+    /// Opens the progress report (a PDF to share with an AI assistant or keep).
+    private var reportCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Progress report", systemImage: "doc.richtext")
+                .font(.headline)
+                .foregroundStyle(Theme.teal)
+            Text("Create a PDF of your progress to keep, or to share with an AI assistant like Claude or ChatGPT and ask how you're doing.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Button {
+                showReport = true
+            } label: {
+                Label("Create progress report", systemImage: "square.and.arrow.up")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.capsule)
+            .tint(Theme.teal)
+            Text("Not a backup. FitForge can't restore your data from a report.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .cardStyle()
     }
 
     private var connectCard: some View {
