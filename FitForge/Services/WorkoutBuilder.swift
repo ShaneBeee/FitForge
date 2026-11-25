@@ -161,7 +161,7 @@ struct PlannedExercise: Identifiable, Hashable {
     /// Rep target for rep-based exercises.
     var reps: ClosedRange<Int>?
     /// Hold/carry time for timed exercises.
-    let seconds: Int?
+    var seconds: Int?
     let restSeconds: Int
     /// True when this exercise is here because of one of the user's focus areas.
     var isFocus = false
@@ -263,6 +263,10 @@ enum WorkoutBuilder {
                     isMainLift: index < 2,
                     isFocus: plan.focus.contains(exercise.pattern)
                 )
+                // Holds you've been completing get longer (up to a minute).
+                if exercise.measure == .time, exercise.pattern != .carry, let base = planned.seconds {
+                    planned.seconds = ExerciseProgression.holdSeconds(for: exercise.id, base: base, history: history)
+                }
                 if let suggestion = WeightProgression.suggestion(for: exercise, profile: profile, uses: recentUses[exercise.id]) {
                     planned.weightLbs = suggestion.weight
                     planned.isWeightIncrease = suggestion.isIncrease
@@ -369,9 +373,11 @@ enum WorkoutBuilder {
             break
         }
 
-        // Each training phase after Foundation moves everything up one level.
+        // Each training phase after Foundation moves everything up one level, and each movement
+        // you've graduated (its exercises got too easy) moves up on its own.
         let phaseBonus = profile.phase.rawValue - TrainingPhase.foundation.rawValue
-        result = Difficulty(rawValue: min(result.rawValue + phaseBonus, Difficulty.advanced.rawValue)) ?? result
+        let boost = phaseBonus + profile.levelBoost(for: pattern)
+        result = Difficulty(rawValue: min(result.rawValue + boost, Difficulty.advanced.rawValue)) ?? result
         return result
     }
 

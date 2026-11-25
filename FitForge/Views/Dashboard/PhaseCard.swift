@@ -81,6 +81,25 @@ struct PhaseCard: View {
                     fraction: (hitRate ?? 0) / needed,
                     met: progress.requirementMet
                 )
+            case .bodyFatOrReps(let drop, let dropNeeded, let hitRate, let hitRateNeeded):
+                Text("And either one of these:")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                requirementRow(
+                    title: "Body fat drop",
+                    value: drop.map { "\(format(max($0, 0))) of \(format(dropNeeded))%" } ?? "Needs a weigh-in",
+                    fraction: (drop ?? 0) / dropNeeded,
+                    met: (drop ?? 0) >= dropNeeded
+                )
+                requirementRow(
+                    title: "Hitting the top of your rep ranges",
+                    value: hitRate.map { "\(Int(($0 * 100).rounded()))% of \(Int(hitRateNeeded * 100))%" } ?? "After your first workouts",
+                    fraction: (hitRate ?? 0) / hitRateNeeded,
+                    met: (hitRate ?? 0) >= hitRateNeeded
+                )
+                Text("Rep ranges count from your last \(PhaseEvaluator.recentWorkoutsForReps) workouts.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             case nil:
                 EmptyView()
             }

@@ -54,7 +54,7 @@ final class WorkoutEngine: Identifiable {
 
     @ObservationIgnored private let context: ModelContext
     @ObservationIgnored private let health: HealthKitManager
-    @ObservationIgnored private let profile: UserProfile
+    @ObservationIgnored let profile: UserProfile
     /// The Apple Watch connection (live heart rate and calories when a Watch is running the workout).
     @ObservationIgnored let watch: WatchWorkoutLink
     @ObservationIgnored private var usedWatch = false

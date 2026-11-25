@@ -50,7 +50,9 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 - **Missed workouts and make-ups:** a workout not done on its day is marked missed and can be made up later that week; every week starts fresh at the beginning of the rotation
 - **Dashboard:** today's workout (or a make-up) with a Start button, plus this week's plan at a glance
 - **Interrupted workouts** are tidied up automatically: sets done are kept as "ended early"
-- **Training phases (Foundation → Build → Push):** Build unlocks after 12 workouts and Push after 30, plus a 1.5% / 3.5% body fat drop (or consistently hitting the top of your rep ranges for a build-muscle goal). You choose when to start a new phase from the dashboard. Each phase moves every movement up a difficulty level; Push also adds a 4th set on the main lifts and trims rest for fat-loss goals. You can go back a phase from Profile
+- **Training phases (Foundation → Build → Push):** Build unlocks after 12 workouts and Push after 30, plus either a 1.5% / 3.5% body fat drop or hitting the top of your rep ranges on 70% of sets over your last 6 workouts (the rep ranges alone for a build-muscle goal), so slow fat loss doesn't hold back training you've outgrown. You choose when to start a new phase from the dashboard. Each phase moves every movement up a difficulty level; Push also adds a 4th set on the main lifts and trims rest for fat-loss goals. You can go back a phase from Profile
+- **Longer holds:** planks and other timed holds go up 10 seconds after you complete every set two workouts in a row, up to a minute
+- **Ready for something harder?** When a bodyweight exercise is at the top of its range every set two workouts in a row (or a hold reaches a full minute twice), the workout summary offers the next level, preferring exercises that use weights you own (e.g. Bodyweight Squat → Goblet Squat). Try it moves that movement up a level from the next workout; Not yet asks again in two weeks
 - **Profile:** everything from setup, with each section (about you, goal, starting point, equipment, ability, schedule) editable in place using the same screens as setup
 
 **Coming next**

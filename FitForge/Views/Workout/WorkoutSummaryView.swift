@@ -61,6 +61,9 @@ struct WorkoutSummaryView: View {
 
                 effortPicker
 
+                // "Bodyweight Squat is getting easy. Ready for something harder?"
+                GraduationCard(profile: engine.profile)
+
                 VStack(spacing: 10) {
                     ForEach(Array(engine.plan.exercises.enumerated()), id: \.element.id) { index, planned in
                         exerciseResult(index: index, planned: planned)

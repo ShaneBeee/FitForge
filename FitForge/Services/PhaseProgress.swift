@@ -7,6 +7,8 @@ struct PhaseProgress {
         case bodyFat(drop: Double?, needed: Double)
         /// Share of recent rep-based sets where you hit the top of the range (nil if no sets yet).
         case reps(hitRate: Double?, needed: Double)
+        /// Either one: the body fat drop, or training that's clearly ready for more.
+        case bodyFatOrReps(drop: Double?, dropNeeded: Double, hitRate: Double?, hitRateNeeded: Double)
     }
 
     let current: TrainingPhase
@@ -21,6 +23,8 @@ struct PhaseProgress {
         switch requirement {
         case .bodyFat(let drop, let needed): (drop ?? 0) >= needed
         case .reps(let hitRate, let needed): (hitRate ?? 0) >= needed
+        case .bodyFatOrReps(let drop, let dropNeeded, let hitRate, let hitRateNeeded):
+            (drop ?? 0) >= dropNeeded || (hitRate ?? 0) >= hitRateNeeded
         case nil: true
         }
     }
@@ -31,8 +35,10 @@ struct PhaseProgress {
 
 enum PhaseEvaluator {
 
-    /// Share of recent rep-based sets that must reach the top of the rep range ("build muscle" goal).
-    static let repHitRateNeeded = 0.75
+    /// Share of recent rep-based sets that must reach the top of the rep range to show you're ready
+    /// for harder workouts. (The only requirement for a "build muscle" goal; for the other goals,
+    /// this or the body fat drop.)
+    static let repHitRateNeeded = 0.70
     /// How many recent workouts to look at for the rep-range check.
     static let recentWorkoutsForReps = 6
 
@@ -51,16 +57,18 @@ enum PhaseEvaluator {
                                  workoutsNeeded: 0, requirement: nil)
         }
 
+        let hitRate = repHitRate(in: Array(counted.prefix(recentWorkoutsForReps)))
         let requirement: PhaseProgress.Requirement
         if profile.goalType == .buildMuscle {
-            requirement = .reps(hitRate: repHitRate(in: Array(counted.prefix(recentWorkoutsForReps))),
-                                needed: repHitRateNeeded)
+            requirement = .reps(hitRate: hitRate, needed: repHitRateNeeded)
         } else {
             let drop: Double? = {
                 guard let start = profile.startBodyFatPercent, let latestBodyFat else { return nil }
                 return start - latestBodyFat
             }()
-            requirement = .bodyFat(drop: drop, needed: next.bodyFatDropToUnlock)
+            // Fat loss is mostly food, so slow fat loss shouldn't hold back training you've outgrown.
+            requirement = .bodyFatOrReps(drop: drop, dropNeeded: next.bodyFatDropToUnlock,
+                                         hitRate: hitRate, hitRateNeeded: repHitRateNeeded)
         }
 
         return PhaseProgress(

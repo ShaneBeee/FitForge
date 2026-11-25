@@ -52,6 +52,12 @@ final class UserProfile {
     var phaseRaw: Int = 1
     var phaseStartedDate: Date? = nil
 
+    /// Movements moved up a level after their exercises got too easy (MovementPattern raw values;
+    /// a pattern listed twice is two levels up).
+    var levelBoostsRaw: [String] = []
+    /// "Not yet" answers to a harder-exercise offer: "exerciseID|seconds since 1970".
+    var graduationSnoozesRaw: [String] = []
+
     @Relationship(deleteRule: .cascade, inverse: \EquipmentItem.profile)
     var equipment: [EquipmentItem]? = []
 
@@ -102,6 +108,34 @@ final class UserProfile {
             return sites.isEmpty ? MeasureSite.defaultTracked : sites
         }
         set { trackedSitesRaw = newValue.map(\.rawValue) }
+    }
+
+    // MARK: - Moving up a level
+
+    /// Extra levels this movement has been moved up.
+    func levelBoost(for pattern: MovementPattern) -> Int {
+        levelBoostsRaw.filter { $0 == pattern.rawValue }.count
+    }
+
+    func moveUpLevel(for pattern: MovementPattern) {
+        levelBoostsRaw.append(pattern.rawValue)
+    }
+
+    /// How long a "Not yet" lasts before the offer can come back.
+    static let graduationSnoozeDays = 14
+
+    func isGraduationSnoozed(_ exerciseID: String, now: Date = .now) -> Bool {
+        graduationSnoozesRaw.contains { entry in
+            let parts = entry.split(separator: "|")
+            guard parts.count == 2, parts[0] == exerciseID, let seconds = Double(parts[1]) else { return false }
+            let snoozedAt = Date(timeIntervalSince1970: seconds)
+            return now.timeIntervalSince(snoozedAt) < Double(Self.graduationSnoozeDays) * 86_400
+        }
+    }
+
+    func snoozeGraduation(_ exerciseID: String, now: Date = .now) {
+        graduationSnoozesRaw.removeAll { $0.hasPrefix(exerciseID + "|") }
+        graduationSnoozesRaw.append("\(exerciseID)|\(Int(now.timeIntervalSince1970))")
     }
 
     func tier(for question: AbilityQuestion) -> Int {
