@@ -95,6 +95,11 @@ struct SessionDetailView: View {
                 }
                 if let effort = session.effort {
                     LabeledContent("Effort", value: "\(effort) of 10")
+                    if session.effortPendingHealth {
+                        Label("Effort waiting to sync to Apple Health", systemImage: "clock.arrow.circlepath")
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.teal)
+                    }
                 }
 
                 Label(

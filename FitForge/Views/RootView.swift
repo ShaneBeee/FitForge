@@ -27,6 +27,8 @@ struct RootView: View {
 struct MainTabView: View {
     let profile: UserProfile
     @Environment(\.modelContext) private var context
+    @Environment(HealthKitManager.self) private var health
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         TabView {
@@ -54,6 +56,13 @@ struct MainTabView: View {
         .task {
             // Tidy up any workout that was interrupted by the app closing.
             WorkoutSession.finalizeUnfinished(in: context)
+            // Send any effort ratings that were waiting for the Watch's workout to reach Health.
+            await EffortSync.retryPending(in: context, health: health)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await EffortSync.retryPending(in: context, health: health) }
+            }
         }
     }
 }

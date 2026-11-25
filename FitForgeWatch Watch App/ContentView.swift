@@ -78,10 +78,14 @@ private struct ControlsPage: View {
                         .lineLimit(2)
                         .minimumScaleFactor(0.7)
 
+                    // Always room for two lines, so "Up next" shows the whole exercise name
+                    // instead of being squeezed to one line by the timer and button.
                     Text(state.detail)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
+                        .minimumScaleFactor(0.85)
+                        .fixedSize(horizontal: false, vertical: true)
 
                     Spacer(minLength: 2)
 

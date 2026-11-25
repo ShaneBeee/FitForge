@@ -82,6 +82,7 @@ final class HealthKitManager {
 
     /// Loads the most recent body stats from Health.
     func refresh() async {
+        await checkAuthorizationIfNeeded()
         guard isAvailable, !needsAuthorization else { return }
         isLoading = true
         defer { isLoading = false }
@@ -127,7 +128,14 @@ final class HealthKitManager {
             .map { Reading(value: $0.value * 100, date: $0.date) }
     }
 
+    /// Makes sure the permission check has run before reading. Without this, a screen that loads
+    /// before any other (e.g. History right after launch) would get nothing back.
+    private func checkAuthorizationIfNeeded() async {
+        if !hasCheckedAuthorization { await checkAuthorization() }
+    }
+
     private func history(_ identifier: HKQuantityTypeIdentifier, unit: HKUnit, since start: Date) async -> [Reading] {
+        await checkAuthorizationIfNeeded()
         guard isAvailable, !needsAuthorization else { return [] }
         let predicate = HKQuery.predicateForSamples(withStart: start, end: nil)
         let descriptor = HKSampleQueryDescriptor(
@@ -157,6 +165,7 @@ final class HealthKitManager {
 
     /// Heart rate readings (beats per minute) recorded between two times, e.g. by an Apple Watch.
     func heartRates(from start: Date, to end: Date) async -> [Double] {
+        await checkAuthorizationIfNeeded()
         guard isAvailable, !needsAuthorization else { return [] }
         let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
         let descriptor = HKSampleQueryDescriptor(
@@ -205,6 +214,7 @@ final class HealthKitManager {
 
     /// Finds a strength workout saved around this time (e.g. by the Apple Watch).
     func strengthWorkout(near start: Date, end: Date) async -> HKWorkout? {
+        await checkAuthorizationIfNeeded()
         guard isAvailable, !needsAuthorization else { return nil }
         let predicate = HKQuery.predicateForSamples(
             withStart: start.addingTimeInterval(-120),

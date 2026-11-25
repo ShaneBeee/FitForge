@@ -22,6 +22,9 @@ final class WorkoutSession {
     var averageHeartRate: Double? = nil
     /// How hard it felt, 1–10 (Apple's workout effort scale).
     var effort: Int? = nil
+    /// The effort is rated but not yet attached to the workout in Apple Health. Happens when the
+    /// Watch saved the workout and it hasn't synced to the iPhone yet; retried when the app opens.
+    var effortPendingHealth: Bool = false
 
     @Relationship(deleteRule: .cascade, inverse: \SetLog.session)
     var sets: [SetLog]? = []

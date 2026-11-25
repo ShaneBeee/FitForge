@@ -607,10 +607,15 @@ final class WorkoutEngine: Identifiable {
         guard !effortSavedToHealth else { return }
         effortSavedToHealth = true
 
+        // Remember it's waiting, so if the app closes before this finishes, it's retried at next launch.
+        session.effortPendingHealth = true
+        try? context.save()
+
         var workout = healthWorkout
         if workout == nil, usedWatch, let end = session.endDate {
-            // The Watch saves its workout a few seconds after finishing, so look for it.
-            for delay in [2, 5, 10] {
+            // The Watch's workout can take a minute or two to sync over to the iPhone's Health
+            // app, so keep looking for about two minutes.
+            for delay in [2, 5, 10, 15, 30, 60] {
                 try? await Task.sleep(for: .seconds(delay))
                 if let found = await health.strengthWorkout(near: session.startDate, end: end) {
                     workout = found
@@ -620,12 +625,15 @@ final class WorkoutEngine: Identifiable {
             healthWorkout = workout
         }
 
+        // Still not there: leave it marked as waiting. EffortSync tries again each time the app opens.
         guard let workout else {
             effortSavedToHealth = false
             return
         }
         do {
             try await health.saveEffort(score, for: workout)
+            session.effortPendingHealth = false
+            try? context.save()
         } catch {
             effortSavedToHealth = false
         }
