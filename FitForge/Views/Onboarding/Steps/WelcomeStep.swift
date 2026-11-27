@@ -24,6 +24,8 @@ struct WelcomeStep: View {
             }
 
             healthCard
+
+            RestoreFromBackupCard()
         }
     }
 

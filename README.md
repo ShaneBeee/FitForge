@@ -54,6 +54,7 @@ A personal home-workout app for iPhone, built with SwiftUI. FitForge builds your
 - **Longer holds:** planks and other timed holds go up 10 seconds after you complete every set two workouts in a row, up to a minute
 - **Ready for something harder?** When a bodyweight exercise is at the top of its range every set two workouts in a row (or a hold reaches a full minute twice), the workout summary offers the next level, preferring exercises that use weights you own (e.g. Bodyweight Squat → Goblet Squat). Try it moves that movement up a level from the next workout; Not yet asks again in two weeks
 - **Profile:** everything from setup, with each section (about you, goal, starting point, equipment, ability, schedule) editable in place using the same screens as setup
+- **Backup and restore** (Profile → Backup): pick a folder once (ideally in iCloud Drive) and FitForge backs up everything (profile, equipment, workouts and sets, weigh-ins, scale extras, tape measurements, phase and level progress) every time you leave the app: one JSON file per day, keeping the last 30 days. Back up now and Save a copy somewhere else are there too. Restoring replaces everything in the app after saving a "Before Restore" copy of what was there, so a wrong restore can be undone. Setup's first screen has Restore from a backup, for a new phone or a reinstall
 
 **Coming next**
 
@@ -98,6 +99,8 @@ FitForge/
 │   ├── TapeBodyFat.swift        Tape-measure body fat estimate (US Navy method)
 │   ├── CalorieEstimator.swift   Workout calories from heart rate, or from the work done
 │   ├── WorkoutLiveActivity.swift Starts, updates and ends the lock screen Live Activity
+│   ├── BackupFile.swift         The backup file format (everything the app stores)
+│   ├── BackupService.swift      Automatic backups to a chosen folder, and restoring
 │   └── VoiceCoach.swift         Spoken prompts and voice selection
 ├── Shared/
 │   └── WorkoutActivityAttributes.swift  Live Activity data, shared with the widget extension
@@ -111,7 +114,7 @@ FitForge/
     ├── Progress/                Goals and Body cards, charts, range bars, scale readings and weigh-in extras entry
     ├── History/                 Past workouts, workout details and weigh-ins
     ├── Measurements/            Body silhouette, measurement entry and progress
-    ├── Profile/                 Profile, section editors and voice picker
+    ├── Profile/                 Profile, section editors, voice picker and backup
     └── Shared/                  Reusable components
 ```
 
@@ -121,4 +124,4 @@ FitForge/
 2. Under **Signing & Capabilities**, choose your team (a free Personal Team works).
 3. Select your iPhone as the run destination and press **Run**.
 
-With a free Apple developer account the app expires after 7 days; just run it from Xcode again. Your data stays on the phone as long as the app isn't deleted.
+With a free Apple developer account the app expires after 7 days; just run it from Xcode again. Your data stays on the phone as long as the app isn't deleted, and with a backup folder chosen (Profile → Backup) it's also copied to iCloud Drive every time you leave the app.

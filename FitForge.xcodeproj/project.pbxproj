@@ -463,6 +463,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "FitForge reads your weight and body fat to track your progress.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "FitForge saves your workouts to Apple Health.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -509,6 +510,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "FitForge reads your weight and body fat to track your progress.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "FitForge saves your workouts to Apple Health.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;

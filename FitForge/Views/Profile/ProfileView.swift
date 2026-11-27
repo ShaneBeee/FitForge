@@ -129,6 +129,8 @@ struct ProfileView: View {
                     }
                 }
 
+                BackupSection()
+
                 Section {
                     Button("Run setup again") { confirmReset = true }
                         .foregroundStyle(Theme.teal)

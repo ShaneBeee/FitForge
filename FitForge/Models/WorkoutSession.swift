@@ -81,6 +81,14 @@ final class SetLog {
         self.weightLbs = planned.weightLbs
     }
 
+    /// A bare set, filled in afterwards (used when restoring a backup).
+    init(exerciseID: String, exerciseName: String, exerciseIndex: Int, setNumber: Int) {
+        self.exerciseID = exerciseID
+        self.exerciseName = exerciseName
+        self.exerciseIndex = exerciseIndex
+        self.setNumber = setNumber
+    }
+
     /// True if this set reached the top of its target (all the reps, or the full time).
     var hitTarget: Bool {
         guard !wasSkipped else { return false }
