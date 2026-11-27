@@ -21,6 +21,9 @@ final class WatchWorkoutLink: NSObject, WCSessionDelegate {
     @ObservationIgnored private let store = HKHealthStore()
     @ObservationIgnored private var heartRateTotal: Double = 0
     @ObservationIgnored private var heartRateCount = 0
+    /// When the Watch's workout first checked in, and when we last heard anything from it.
+    @ObservationIgnored private(set) var firstHeardAt: Date?
+    @ObservationIgnored private(set) var lastHeardAt: Date?
 
     /// Called when a button is pressed on the Watch.
     @ObservationIgnored var onCommand: ((WatchCommand) -> Void)?
@@ -71,6 +74,19 @@ final class WatchWorkoutLink: NSObject, WCSessionDelegate {
         send(.state(state))
     }
 
+    /// True if the Watch really recorded this workout: it's still sending updates, and its session
+    /// started early enough to cover at least half of it. False when the Watch app was closed or
+    /// lost its connection partway through, so its numbers (and the workout it saved) only cover
+    /// a slice of the workout.
+    func recordedWholeWorkout(start: Date, end: Date) -> Bool {
+        guard isConnected, let firstHeardAt, let lastHeardAt else { return false }
+        let length = end.timeIntervalSince(start)
+        guard length > 0 else { return true }
+        let stillRecording = end.timeIntervalSince(lastHeardAt) < 120
+        let covered = end.timeIntervalSince(firstHeardAt) / length
+        return stillRecording && covered >= 0.5
+    }
+
     // MARK: - Internals
 
     private func resetMetrics() {
@@ -79,6 +95,15 @@ final class WatchWorkoutLink: NSObject, WCSessionDelegate {
         activeCalories = 0
         heartRateTotal = 0
         heartRateCount = 0
+        firstHeardAt = nil
+        lastHeardAt = nil
+    }
+
+    /// Notes that the Watch's workout is alive.
+    private func heardFromWatch() {
+        let now = Date.now
+        if firstHeardAt == nil { firstHeardAt = now }
+        lastHeardAt = now
     }
 
     private func send(_ message: WatchMessage) {
@@ -94,9 +119,11 @@ final class WatchWorkoutLink: NSObject, WCSessionDelegate {
         case .started:
             // The Watch says "I'm here" until it hears back. Answer every time with the current
             // state, so a lost reply can't leave the Watch stuck on "Syncing with your iPhone".
+            heardFromWatch()
             isConnected = true
             onConnect?()
         case .metrics(let heartRate, let calories):
+            heardFromWatch()
             markConnected()
             if let heartRate, heartRate > 0 {
                 self.heartRate = heartRate

@@ -404,12 +404,18 @@ final class WorkoutEngine: Identifiable {
         speak(status == .completed ? "Workout complete. Great work." : "Workout saved.")
         liveActivity.end(liveState())
 
-        // If the Watch ran the workout, it saves it to Apple Health with its own measurements.
+        // If the Watch recorded the workout, it saves it to Apple Health with its own measurements.
+        // If it stopped partway (app closed, connection lost), its numbers only cover a slice of the
+        // workout, so the phone uses its own estimate and saves the full workout instead.
         if watch.isConnected {
-            usedWatch = true
-            watchCalories = watch.activeCalories
-            watchAverageHeartRate = watch.averageHeartRate
-            watch.endWatchWorkout()
+            if watch.recordedWholeWorkout(start: session.startDate, end: session.endDate ?? .now) {
+                usedWatch = true
+                watchCalories = watch.activeCalories
+                watchAverageHeartRate = watch.averageHeartRate
+                watch.endWatchWorkout()
+            } else {
+                watch.discardWatchWorkout()
+            }
         }
         saveToHealth()
     }
