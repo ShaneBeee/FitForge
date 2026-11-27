@@ -6,7 +6,8 @@ final class VoiceCoach: NSObject, AVSpeechSynthesizerDelegate {
     /// UserDefaults key for the voice picked in Profile → Coach voice.
     static let voiceDefaultsKey = "coachVoiceIdentifier"
 
-    private let synthesizer = AVSpeechSynthesizer()
+    /// Only ever used from the main thread (the workout screen), so it's safe to share.
+    nonisolated(unsafe) private let synthesizer = AVSpeechSynthesizer()
     var isEnabled = true
 
     override init() {

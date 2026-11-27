@@ -88,7 +88,7 @@ struct ProfileRecord: Codable {
         phaseStartedDate = p.phaseStartedDate
         levelBoostsRaw = p.levelBoostsRaw
         graduationSnoozesRaw = p.graduationSnoozesRaw
-        equipment = (p.equipment ?? []).sorted { $0.addedDate < $1.addedDate }.map(EquipmentRecord.init)
+        equipment = (p.equipment ?? []).sorted { $0.addedDate < $1.addedDate }.map { EquipmentRecord($0) }
     }
 
     /// A new profile (with its equipment) inserted into `context`.
@@ -259,7 +259,7 @@ struct WorkoutRecord: Codable {
         effortPendingHealth = s.effortPendingHealth
         sets = (s.sets ?? [])
             .sorted { ($0.exerciseIndex, $0.setNumber) < ($1.exerciseIndex, $1.setNumber) }
-            .map(SetRecord.init)
+            .map { SetRecord($0) }
     }
 
     func insert(into context: ModelContext) {

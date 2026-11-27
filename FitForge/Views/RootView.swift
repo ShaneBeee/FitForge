@@ -27,7 +27,7 @@ struct RootView: View {
             }
         }
         .animation(.snappy, value: profile == nil)
-        .environment(\.restoreBackup) { file in startRestore(file) }
+        .environment(\.restoreBackup, RestoreBackupAction { file in startRestore(file) })
         .alert(
             restoreMessage?.title ?? "",
             isPresented: Binding(get: { restoreMessage != nil }, set: { if !$0 { restoreMessage = nil } }),

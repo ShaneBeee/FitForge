@@ -28,10 +28,10 @@ enum BackupService {
     static func snapshot(of context: ModelContext) throws -> BackupFile {
         var file = BackupFile()
         file.appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-        file.profiles = try context.fetch(FetchDescriptor<UserProfile>()).map(ProfileRecord.init)
-        file.weighIns = try context.fetch(FetchDescriptor<BodyMeasurement>(sortBy: [SortDescriptor(\.date)])).map(WeighInRecord.init)
-        file.tapeMeasurements = try context.fetch(FetchDescriptor<TapeMeasurement>(sortBy: [SortDescriptor(\.date)])).map(TapeRecord.init)
-        file.workouts = try context.fetch(FetchDescriptor<WorkoutSession>(sortBy: [SortDescriptor(\.startDate)])).map(WorkoutRecord.init)
+        file.profiles = try context.fetch(FetchDescriptor<UserProfile>()).map { ProfileRecord($0) }
+        file.weighIns = try context.fetch(FetchDescriptor<BodyMeasurement>(sortBy: [SortDescriptor(\.date)])).map { WeighInRecord($0) }
+        file.tapeMeasurements = try context.fetch(FetchDescriptor<TapeMeasurement>(sortBy: [SortDescriptor(\.date)])).map { TapeRecord($0) }
+        file.workouts = try context.fetch(FetchDescriptor<WorkoutSession>(sortBy: [SortDescriptor(\.startDate)])).map { WorkoutRecord($0) }
         return file
     }
 
@@ -244,8 +244,16 @@ nonisolated struct BackupDocument: FileDocument {
     }
 }
 
+/// Restores a backup from anywhere in the app (handled by RootView, which swaps the screens
+/// out while the data is replaced). Call it like a function: `restoreBackup(file)`.
+struct RestoreBackupAction {
+    var perform: (BackupFile) -> Void = { _ in }
+
+    func callAsFunction(_ file: BackupFile) {
+        perform(file)
+    }
+}
+
 extension EnvironmentValues {
-    /// Restores a backup from anywhere in the app (handled by RootView, which swaps the screens
-    /// out while the data is replaced).
-    @Entry var restoreBackup: (BackupFile) -> Void = { _ in }
+    @Entry var restoreBackup = RestoreBackupAction()
 }
